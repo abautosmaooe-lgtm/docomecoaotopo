@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Global Security Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      // In this applet, administrative actions can be allowed based on registered admin records
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /portal/config {
+      allow read: if true;
+      allow write: if isVerifiedUser();
+    }
+
+    match /photos/{photoId} {
+      allow read: if true;
+      allow write: if isVerifiedUser();
+    }
+  }
+}

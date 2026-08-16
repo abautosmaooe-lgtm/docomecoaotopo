@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "PortalConfig": {
+      "title": "PortalConfig",
+      "description": "Global configuration and portal custom branding/images",
+      "type": "object",
+      "properties": {
+        "quem_somos_profile_pic": {
+          "type": "string",
+          "description": "Direct URL to Regina Simões profile picture"
+        },
+        "quem_somos_gallery": {
+          "type": "array",
+          "description": "Gallery photos for 'Quem Somos' section"
+        },
+        "portalPagesConfig": {
+          "type": "object",
+          "description": "JSON object with editable pages configurations"
+        },
+        "logoConfig": {
+          "type": "object",
+          "description": "Branding logo width, height, margin configurations"
+        },
+        "gradientStyle": {
+          "type": "string",
+          "description": "Background styling theme and colors"
+        },
+        "footerCredits": {
+          "type": "string",
+          "description": "Custom footer text / copyrights"
+        },
+        "positionableImages": {
+          "type": "object",
+          "description": "Positions and direct links of all movable portal images"
+        }
+      },
+      "required": ["quem_somos_profile_pic", "positionableImages"]
+    },
+    "Photo": {
+      "title": "Photo",
+      "description": "An image or event photo uploaded to the general gallery",
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["url", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/portal/config": {
+      "schema": "PortalConfig",
+      "description": "Single document holding the general portal configurations"
+    },
+    "/photos/{photoId}": {
+      "schema": "Photo",
+      "description": "Public general photos uploaded by administrator"
+    }
+  }
+}

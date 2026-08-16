@@ -1,0 +1,6 @@
+{
+  "name": "DO COMEÇO AO TOPO",
+  "description": "Portal de Negócios de alta fidelidade com painel de controle (CMS), análise de engajamento em tempo real (Analytics), customização de layout, clima e acesso exclusivo via Google Auth.",
+  "requestFramePermissions": ["geolocation", "microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

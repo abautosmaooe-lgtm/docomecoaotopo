@@ -1,0 +1,49 @@
+{
+  "photos": [],
+  "articles": [],
+  "comments": [],
+  "quem_somos_profile_pic": "/regina-profile.jpg",
+  "quem_somos_gallery": [],
+  "portalPagesConfig": null,
+  "logoConfig": null,
+  "gradientStyle": "",
+  "footerCredits": "",
+  "positionableImages": {
+    "ambassador-pic-0-Anderson de Paula Santos": {
+      "x": 50,
+      "y": 18
+    },
+    "ambassador-pic-1-Andreia de Oliveira Henriques": {
+      "x": 50,
+      "y": 50
+    },
+    "ambassador-pic-2-Bianca Torres": {
+      "x": 50,
+      "y": 50
+    },
+    "ambassador-pic-3-Danielle Lara": {
+      "x": 50,
+      "y": 50
+    },
+    "ambassador-pic-4-Fátima Anthero": {
+      "x": 50,
+      "y": 50
+    },
+    "ambassador-pic-5-Flávia Reis": {
+      "x": 47,
+      "y": 29
+    },
+    "ambassador-pic-6-Jaqueline Dias": {
+      "x": 50,
+      "y": 50
+    },
+    "ambassador-pic-7-Silvania Silva": {
+      "x": 50,
+      "y": 50
+    },
+    "ambassador-pic-8-Isabela Cristina": {
+      "x": 50,
+      "y": 50
+    }
+  }
+}

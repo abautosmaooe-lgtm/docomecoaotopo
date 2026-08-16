@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background -->
+  <rect width="100" height="100" rx="20" fill="#09090b" />
+  
+  <!-- Stylized Chart Arrow (Green) -->
+  <path d="M 20 80 L 80 20 M 60 20 L 80 20 L 80 40" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Microphone Body (Pink) -->
+  <rect x="38" y="35" width="24" height="32" rx="12" fill="#ec4899" />
+  
+  <!-- Microphone Stand & Base (White) -->
+  <path d="M 28 55 a 22 22 0 0 0 44 0" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+  <path d="M 50 77 v 10 M 35 87 h 30" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" />
+</svg>

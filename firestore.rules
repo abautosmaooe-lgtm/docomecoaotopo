@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Catch-all rule to allow read/write for all collections
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Explicit access rules for matriculas and portal_users collections
+    match /matriculas/{matriculaId} {
+      allow read, write: if true;
+    }
+
+    match /portal_users/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Global Authentication and Identity verification helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    match /portal/config {
+      allow read: if true;
+      allow write: if isVerifiedUser();
+    }
+
+    match /photos/{photoId} {
+      allow read: if true;
+      allow write: if isVerifiedUser();
+    }
+  }
+}
