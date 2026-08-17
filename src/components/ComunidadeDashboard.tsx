@@ -1233,8 +1233,22 @@ export default function ComunidadeDashboard({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in text-white">
+    <div className="space-y-6 animate-fade-in text-white" id="acesso-para-membros-section">
       
+      {/* ACESSO PARA MEMBROS & PLANOS DA COMUNIDADE (QUERO FAZER PARTE) */}
+      <div className="bg-stone-950/80 border-2 border-pink-500/30 rounded-3xl p-4 sm:p-6 shadow-[0_4px_35px_rgba(236,72,153,0.1)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-full bg-pink-500/5 blur-3xl pointer-events-none" />
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-900">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[10px] bg-gradient-to-r from-pink-500 to-purple-500 text-black font-mono font-black uppercase tracking-widest px-3 py-1 rounded-full shadow">
+              👑 ACESSO PARA MEMBROS • QUERO FAZER PARTE
+            </span>
+          </div>
+          <span className="text-xs font-mono text-zinc-400">Planos & Matrícula Oficial</span>
+        </div>
+        <CommunityMembership isDarkMode={isDarkMode} isAdmin={isAdmin} />
+      </div>
+
       {/* 30 DAYS TRIAL STATUS BANNER */}
       <div className="bg-gradient-to-r from-emerald-500/20 via-stone-900 to-teal-500/20 border-2 border-emerald-500/40 rounded-3xl p-5 relative overflow-hidden shadow-[0_4px_30px_rgba(16,185,129,0.12)]">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

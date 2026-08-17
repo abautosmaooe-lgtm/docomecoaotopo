@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { compressImageFile } from "../utils/imageCompression";
 import {
   BarChart,
   Bar,
@@ -55,7 +57,6 @@ import {
   WifiOff,
   HardDrive
 } from "lucide-react";
-import { toast } from "sonner";
 import { NewsArticle, CategoryType } from "../types";
 import { playClickSound, playSuccessSound, playNegativeSound } from "../utils/audio";
 import ImageCropperModal from "./ImageCropperModal";
@@ -1111,7 +1112,7 @@ export default function CmsDashboard({
                       type="file"
                       accept="image/png, image/jpeg, image/webp"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
                           const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -1119,13 +1120,15 @@ export default function CmsDashboard({
                             toast.error("Formato de arquivo não suportado! Envie apenas fotos em formato JPG, PNG ou WEBP.");
                             return;
                           }
-                          const r = new FileReader();
-                          r.onloadend = () => {
-                            const b64 = r.result as string;
-                            setCropperSource(b64);
+                          try {
+                            toast.loading("Otimizando imagem para edição...", { id: "cms-upload" });
+                            const compressedB64 = await compressImageFile(file, { maxDimension: 1400, quality: 0.85 });
+                            setCropperSource(compressedB64);
                             setIsCropperOpen(true);
-                          };
-                          r.readAsDataURL(file);
+                            toast.dismiss("cms-upload");
+                          } catch (err: any) {
+                            toast.error("Erro ao processar imagem: " + (err.message || "Erro"), { id: "cms-upload" });
+                          }
                         }
                       }}
                     />

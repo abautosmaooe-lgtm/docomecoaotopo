@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { X, Sliders, Image, Maximize2, Sparkles, Smile, RefreshCw, Type, Eye, Upload, Camera, Trash2, Copy, Crop, Move } from "lucide-react";
 import { NewsArticle, CategoryType } from "../types";
 import { playClickSound, playSuccessSound } from "../utils/audio";
+import { processAndUploadImageFile } from "../utils/imageCompression";
 
 interface LogoConfigType {
   customImageUrl: string;
@@ -379,6 +380,8 @@ export default function VisualEditorPanel({
       location: localLocation,
     };
     onSaveArticle(updated);
+    toast.success("✨ Card atualizado com sucesso!");
+    onClose();
   };
 
   const handleApplyLogoChanges = () => {
@@ -390,6 +393,8 @@ export default function VisualEditorPanel({
       customText2: localLogoText2,
       customSub: localLogoSub
     });
+    toast.success("✨ Logomarca atualizada com sucesso!");
+    onClose();
   };
 
   return (
@@ -507,21 +512,18 @@ export default function VisualEditorPanel({
                       type="file"
                       accept="image/png, image/jpeg, image/webp"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-                          if (!allowedTypes.includes(file.type)) {
-                            toast.error("Formato não suportado! Envie apenas fotos em formato JPG, PNG ou WEBP.");
-                            return;
+                          try {
+                            toast.loading("Otimizando e enviando imagem...", { id: "upload" });
+                            const url = await processAndUploadImageFile(file);
+                            setLocalImg(url);
+                            handleAddImageToGallery(url);
+                            toast.success("✨ Imagem enviada com sucesso!", { id: "upload" });
+                          } catch (err: any) {
+                            toast.error(err.message || "Erro ao enviar imagem", { id: "upload" });
                           }
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setLocalImg(reader.result as string);
-                            // Also save to global backup media gallery so they have it registered!
-                            handleAddImageToGallery(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
                         }
                       }}
                     />
@@ -839,21 +841,18 @@ export default function VisualEditorPanel({
                       type="file"
                       accept="image/png, image/jpeg, image/webp"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-                          if (!allowedTypes.includes(file.type)) {
-                            toast.error("Formato não suportado! Envie apenas fotos em formato JPG, PNG ou WEBP.");
-                            return;
+                          try {
+                            toast.loading("Otimizando e enviando logomarca...", { id: "upload" });
+                            const url = await processAndUploadImageFile(file);
+                            setLocalLogoImg(url);
+                            handleAddImageToGallery(url);
+                            toast.success("✨ Logomarca enviada com sucesso!", { id: "upload" });
+                          } catch (err: any) {
+                            toast.error(err.message || "Erro ao enviar logomarca", { id: "upload" });
                           }
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setLocalLogoImg(reader.result as string);
-                            // Registry upload to general gallery
-                            handleAddImageToGallery(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
                         }
                       }}
                     />
@@ -967,16 +966,19 @@ export default function VisualEditorPanel({
                   multiple
                   accept="image/png, image/jpeg, image/webp"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const files = e.target.files;
                     if (files) {
-                      Array.from(files).forEach((file: any) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          handleAddImageToGallery(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      });
+                      for (const file of Array.from(files)) {
+                        try {
+                          toast.loading("Otimizando e enviando foto...", { id: "upload" });
+                          const url = await processAndUploadImageFile(file);
+                          handleAddImageToGallery(url);
+                          toast.success("✨ Foto enviada com sucesso!", { id: "upload" });
+                        } catch (err: any) {
+                          toast.error(err.message || "Erro ao enviar foto", { id: "upload" });
+                        }
+                      }
                     }
                   }}
                 />
@@ -1156,16 +1158,19 @@ export default function VisualEditorPanel({
                               type="file"
                               accept="image/png, image/jpeg, image/webp"
                               className="hidden"
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    localStorage.setItem(`${p.key}_uploaded_src`, reader.result as string);
+                                  try {
+                                    toast.loading("Otimizando e enviando foto...", { id: "upload" });
+                                    const url = await processAndUploadImageFile(file);
+                                    localStorage.setItem(`${p.key}_uploaded_src`, url);
                                     window.dispatchEvent(new Event("image_updated"));
                                     playSuccessSound?.();
-                                  };
-                                  reader.readAsDataURL(file);
+                                    toast.success("✨ Foto atualizada com sucesso!", { id: "upload" });
+                                  } catch (err: any) {
+                                    toast.error(err.message || "Erro ao enviar foto", { id: "upload" });
+                                  }
                                 }
                               }}
                             />

@@ -110,7 +110,29 @@ export function safeLocalStorageSet(key: string, value: string): boolean {
     return true;
   } catch (e: any) {
     console.warn(`[SafeStorage] Could not write "${key}" to localStorage (Quota exceeded). Falling back without throwing.`);
-    // Try clearing old large items if needed, or simply avoid crash
     return false;
   }
+}
+
+/**
+ * Processes an uploaded image file: compresses client-side and uploads to server.
+ * Handles validation, compression, and error catching.
+ */
+export async function processAndUploadImageFile(file: File): Promise<string> {
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+  if (!allowedTypes.includes(file.type) && !file.type.startsWith("image/")) {
+    throw new Error("Formato de arquivo não suportado! Envie apenas imagens JPG, PNG ou WEBP.");
+  }
+
+  if (file.size > 25 * 1024 * 1024) {
+    throw new Error("A imagem é muito grande (máximo de 25MB).");
+  }
+
+  const compressedDataUrl = await compressImageFile(file, {
+    maxDimension: 1200,
+    quality: 0.8
+  });
+
+  const hostedUrl = await uploadImageToServer(compressedDataUrl);
+  return hostedUrl;
 }

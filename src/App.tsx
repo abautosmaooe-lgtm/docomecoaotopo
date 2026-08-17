@@ -55,7 +55,8 @@ import {
   GripVertical,
   ArrowUp,
   ArrowDown,
-  RefreshCw
+  RefreshCw,
+  Crown
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import VLibras from '@djpfs/react-vlibras';
@@ -2374,7 +2375,54 @@ export default function App() {
                 <span className="text-[8px] font-mono px-1 rounded bg-pink-500/10 text-pink-400 font-black tracking-widest">VIP</span>
               </button>
 
-              {/* 6. PARCEIROS (Página individual) */}
+              {/* 5.5. QUERO FAZER PARTE */}
+              <button
+                onClick={() => {
+                  playClickSound(635, "sine");
+                  setSelectedCategory(null);
+                  setActiveSection(null);
+                  setNavInicioOpen(false);
+                  setNavRamosOpen(false);
+                  setNavEventosOpen(false);
+                  setNavContatoOpen(false);
+                  setTimeout(() => {
+                    const el = document.getElementById("homepage-section-membership") || document.getElementById("comunidade-section-root");
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }, 100);
+                }}
+                className={`py-1 transition-all flex items-center gap-1.5 font-bold ${
+                  activeSection === "membership"
+                    ? "text-pink-400"
+                    : isDarkMode ? "text-pink-400 hover:text-pink-300" : "text-pink-600 hover:text-pink-700"
+                }`}
+                title="Conheça os planos e faça parte da nossa comunidade"
+              >
+                <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-pink-400" /> QUERO FAZER PARTE</span>
+              </button>
+
+              {/* 5.6. QUERO ANUNCIAR */}
+              <button
+                onClick={() => {
+                  playClickSound(640, "sine");
+                  setActiveSection("ANUNCIE AQUI");
+                  setSelectedCategory(null);
+                  setNavInicioOpen(false);
+                  setNavRamosOpen(false);
+                  setNavEventosOpen(false);
+                  setNavContatoOpen(false);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className={`py-1 transition-all flex items-center gap-1.5 font-bold ${
+                  activeSection === "ANUNCIE AQUI"
+                    ? "text-green-400"
+                    : isDarkMode ? "text-green-400 hover:text-green-300" : "text-green-600 hover:text-green-700"
+                }`}
+                title="Anuncie sua marca e patrocine o portal"
+              >
+                <span className="flex items-center gap-1.5"><Megaphone className="w-3.5 h-3.5 text-green-400" /> QUERO ANUNCIAR</span>
+              </button>
               <button
                 onClick={() => {
                   playClickSound(650, "sine");
@@ -5110,6 +5158,158 @@ export default function App() {
                   </div>
                 )}
                 <PartnersCarousel isAdmin={isDirectEditingEnabled} />
+              </div>
+
+              {/* MEMBERSHIP PLANOS DA COMUNIDADE (FAZER PARTE) */}
+              <div 
+                style={{ order: homepageSectionsOrder.indexOf("membership") }} 
+                className="relative group/section"
+                id="homepage-section-membership"
+              >
+                {isDirectEditingEnabled && (
+                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                    <div 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("membership"))}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("membership"))}
+                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                      title="Arraste para reordenar"
+                    >
+                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                    </div>
+                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">👑 Planos da Comunidade</span>
+                    <button 
+                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("membership"))} 
+                      disabled={homepageSectionsOrder.indexOf("membership") === 0} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("membership"))} 
+                      disabled={homepageSectionsOrder.indexOf("membership") === homepageSectionsOrder.length - 1} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                <CommunityMembership isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+              </div>
+
+              {/* PORTAL ADVERTISING (ANUNCIE AQUI - COTAS & PATROCINADOR) */}
+              <div 
+                style={{ order: homepageSectionsOrder.indexOf("advertising") }} 
+                className="relative group/section"
+                id="homepage-section-advertising"
+              >
+                {isDirectEditingEnabled && (
+                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                    <div 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("advertising"))}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("advertising"))}
+                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                      title="Arraste para reordenar"
+                    >
+                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                    </div>
+                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">📊 Publicidade (Cotas)</span>
+                    <button 
+                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("advertising"))} 
+                      disabled={homepageSectionsOrder.indexOf("advertising") === 0} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("advertising"))} 
+                      disabled={homepageSectionsOrder.indexOf("advertising") === homepageSectionsOrder.length - 1} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                <PortalAdvertising isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+              </div>
+
+              {/* TESTIMONIALS SECTION */}
+              <div 
+                style={{ order: homepageSectionsOrder.indexOf("testimonials") }} 
+                className="relative group/section"
+                id="homepage-section-testimonials"
+              >
+                {isDirectEditingEnabled && (
+                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                    <div 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("testimonials"))}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("testimonials"))}
+                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                      title="Arraste para reordenar"
+                    >
+                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                    </div>
+                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">💬 Depoimentos</span>
+                    <button 
+                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("testimonials"))} 
+                      disabled={homepageSectionsOrder.indexOf("testimonials") === 0} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("testimonials"))} 
+                      disabled={homepageSectionsOrder.indexOf("testimonials") === homepageSectionsOrder.length - 1} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                <TestimonialShuffleCards isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+              </div>
+
+              {/* ROTATING BANNER ADS */}
+              <div 
+                style={{ order: homepageSectionsOrder.indexOf("ads") }} 
+                className="relative group/section"
+                id="homepage-section-ads"
+              >
+                {isDirectEditingEnabled && (
+                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                    <div 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("ads"))}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("ads"))}
+                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                      title="Arraste para reordenar"
+                    >
+                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                    </div>
+                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">🎯 Banners Ads</span>
+                    <button 
+                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("ads"))} 
+                      disabled={homepageSectionsOrder.indexOf("ads") === 0} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("ads"))} 
+                      disabled={homepageSectionsOrder.indexOf("ads") === homepageSectionsOrder.length - 1} 
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                <RotatingBannerAds isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
               </div>
             </motion.div>
           )}
