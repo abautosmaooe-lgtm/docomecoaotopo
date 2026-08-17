@@ -30,7 +30,7 @@ interface MenuItemDef {
 const MENU_ITEMS: MenuItemDef[] = [
   { label: "INÍCIO", action: "home", isCategory: true, cat: null },
   { label: "COMUNIDADE", action: "category", cat: "COMUNIDADE", isPremium: true },
-  { label: "QUERO FAZER PARTE", action: "section", sectionId: "homepage-section-membership" },
+  { label: "QUERO FAZER PARTE", action: "section", sectionId: "QUERO FAZER PARTE" },
   { label: "QUERO ANUNCIAR", action: "section", sectionId: "ANUNCIE AQUI" },
   { label: "EVENTOS", action: "category", cat: "EVENTOS" },
   { label: "DEPOIMENTOS", action: "section", sectionId: "DEPOIMENTOS" },

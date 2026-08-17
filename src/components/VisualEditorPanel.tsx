@@ -81,9 +81,12 @@ export default function VisualEditorPanel({
   onSaveLogo
 }: VisualEditorPanelProps) {
   // Local edited state for article
+  const [localCategory, setLocalCategory] = useState<string>("NOTÍCIAS");
   const [localTitle, setLocalTitle] = useState("");
   const [localExcerpt, setLocalExcerpt] = useState("");
+  const [localContent, setLocalContent] = useState("");
   const [localImg, setLocalImg] = useState("");
+  const [localLinkUrl, setLocalLinkUrl] = useState("");
   const [localHeight, setLocalHeight] = useState<number>(200);
   const [localUseCustomHeight, setLocalUseCustomHeight] = useState(false);
   const [localWidthSpan, setLocalWidthSpan] = useState<"col-span-1" | "col-span-2" | "col-span-3">("col-span-1");
@@ -93,6 +96,9 @@ export default function VisualEditorPanel({
   const [localAspect, setLocalAspect] = useState<"auto" | "square" | "video" | "tall">("auto");
   const [localAuthor, setLocalAuthor] = useState("");
   const [localLocation, setLocalLocation] = useState("");
+  const [localDate, setLocalDate] = useState("");
+  const [localTags, setLocalTags] = useState("");
+  const [localIsPremium, setLocalIsPremium] = useState(false);
 
   // Local edited state for logo
   const [localLogoImg, setLocalLogoImg] = useState("");
@@ -230,9 +236,12 @@ export default function VisualEditorPanel({
   // Sync state if elements change in parent
   useEffect(() => {
     if (article) {
-      setLocalTitle(article.title);
-      setLocalExcerpt(article.excerpt);
-      setLocalImg(article.imageUrl);
+      setLocalCategory(article.category || "NOTÍCIAS");
+      setLocalTitle(article.title || "");
+      setLocalExcerpt(article.excerpt || "");
+      setLocalContent(article.content || "");
+      setLocalImg(article.imageUrl || "");
+      setLocalLinkUrl(article.linkUrl || "");
       setLocalHeight(article.customImageHeight || 192);
       setLocalUseCustomHeight(!!article.customImageHeight);
       setLocalWidthSpan((article.customWidthSpan || "col-span-1") as any);
@@ -242,6 +251,9 @@ export default function VisualEditorPanel({
       setLocalAspect((article.customAspectRatio || "auto") as any);
       setLocalAuthor(article.author || "Editor");
       setLocalLocation(article.location || "Juiz de Fora, MG");
+      setLocalDate(article.date || new Date().toISOString());
+      setLocalTags((article.tags || []).join(", "));
+      setLocalIsPremium(!!article.isPremium);
     }
   }, [article]);
 
@@ -261,9 +273,12 @@ export default function VisualEditorPanel({
     if (!isOpen || !article) return;
 
     const hasChanged = 
+      localCategory !== (article.category || "NOTÍCIAS") ||
       localTitle !== article.title ||
       localExcerpt !== article.excerpt ||
+      localContent !== (article.content || "") ||
       localImg !== article.imageUrl ||
+      localLinkUrl !== (article.linkUrl || "") ||
       (localUseCustomHeight ? localHeight !== article.customImageHeight : article.customImageHeight !== undefined) ||
       localWidthSpan !== (article.customWidthSpan || "col-span-1") ||
       localPadding !== (article.customPadding || "p-5") ||
@@ -271,7 +286,8 @@ export default function VisualEditorPanel({
       localGlow !== (article.customGlowColor || "none") ||
       localAspect !== (article.customAspectRatio || "auto") ||
       localAuthor !== (article.author || "Editor") ||
-      localLocation !== (article.location || "Juiz de Fora, MG");
+      localLocation !== (article.location || "Juiz de Fora, MG") ||
+      localIsPremium !== (!!article.isPremium);
 
     if (!hasChanged) {
       return;
@@ -279,11 +295,19 @@ export default function VisualEditorPanel({
 
     setSaveStatus("saving");
     const timer = setTimeout(() => {
+      const tagList = localTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+
       const updated: NewsArticle = {
         ...article,
+        category: localCategory,
         title: localTitle,
         excerpt: localExcerpt,
+        content: localContent,
         imageUrl: localImg,
+        linkUrl: localLinkUrl || undefined,
         customImageHeight: localUseCustomHeight ? localHeight : undefined,
         customWidthSpan: localWidthSpan,
         customPadding: localPadding,
@@ -292,6 +316,8 @@ export default function VisualEditorPanel({
         customAspectRatio: localAspect,
         author: localAuthor,
         location: localLocation,
+        tags: tagList.length > 0 ? tagList : article.tags || [],
+        isPremium: localIsPremium,
       };
       onSaveArticle(updated);
       setSaveStatus("saved");
@@ -301,9 +327,12 @@ export default function VisualEditorPanel({
 
     return () => clearTimeout(timer);
   }, [
+    localCategory,
     localTitle,
     localExcerpt,
+    localContent,
     localImg,
+    localLinkUrl,
     localHeight,
     localUseCustomHeight,
     localWidthSpan,
@@ -313,6 +342,8 @@ export default function VisualEditorPanel({
     localAspect,
     localAuthor,
     localLocation,
+    localTags,
+    localIsPremium,
     isOpen,
     article
   ]);
@@ -365,11 +396,19 @@ export default function VisualEditorPanel({
 
   const handleApplyArticleChanges = () => {
     if (!article) return;
+    const tagList = localTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
     const updated: NewsArticle = {
       ...article,
+      category: localCategory,
       title: localTitle,
       excerpt: localExcerpt,
+      content: localContent,
       imageUrl: localImg,
+      linkUrl: localLinkUrl || undefined,
       customImageHeight: localUseCustomHeight ? localHeight : undefined,
       customWidthSpan: localWidthSpan,
       customPadding: localPadding,
@@ -378,9 +417,12 @@ export default function VisualEditorPanel({
       customAspectRatio: localAspect,
       author: localAuthor,
       location: localLocation,
+      date: localDate || article.date,
+      tags: tagList.length > 0 ? tagList : article.tags || [],
+      isPremium: localIsPremium,
     };
     onSaveArticle(updated);
-    toast.success("✨ Card atualizado com sucesso!");
+    toast.success("✨ Notícia / Card salvo com sucesso!");
     onClose();
   };
 
@@ -400,7 +442,7 @@ export default function VisualEditorPanel({
   return (
     <div
       id="visual-editor-drawer"
-      className="fixed inset-y-0 right-0 w-full sm:w-[440px] z-50 bg-stone-950 border-l border-zinc-850 text-white shadow-[0_0_50px_rgba(0,0,0,0.85)] flex flex-col justify-between animate-fade-in"
+      className="fixed inset-y-0 right-0 w-full sm:w-[460px] z-50 bg-stone-950 border-l border-zinc-850 text-white shadow-[0_0_50px_rgba(0,0,0,0.85)] flex flex-col justify-between animate-fade-in"
     >
       {/* HEADER SECTION */}
       <div className="p-4 border-b border-zinc-850 bg-black flex items-center justify-between">
@@ -410,10 +452,10 @@ export default function VisualEditorPanel({
           </div>
           <div>
             <h3 className="font-display font-black text-xs uppercase tracking-widest text-[#22c55e]">
-              ESTÚDIO WEB DESIGN
+              ESTÚDIO WEB & EDITOR DE NOTÍCIAS
             </h3>
             <span className="text-[9px] text-zinc-500 font-mono flex items-center gap-1.5 mt-0.5">
-              <span>Layout em tempo real</span>
+              <span>Layout e Conteúdo em tempo real</span>
               <span>•</span>
               {saveStatus === "saving" && <span className="text-amber-400 font-bold animate-pulse">● Salvando</span>}
               {saveStatus === "saved" && <span className="text-green-400 font-bold">✓ Salvo</span>}
@@ -444,7 +486,7 @@ export default function VisualEditorPanel({
               : "text-zinc-400 hover:text-white hover:bg-zinc-900/60"
           }`}
         >
-          <span>🎨 Aparência</span>
+          <span>🎨 Conteúdo & Visual</span>
         </button>
         <button
           type="button"
@@ -469,32 +511,88 @@ export default function VisualEditorPanel({
             /* SECTION 1: ARTICLE CARD DESIGN CONFIG */
             <div className="space-y-6">
               <div className="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl space-y-1">
-                <span className="text-[10px] font-mono font-bold text-pink-400 uppercase">Editando Elemento</span>
-                <h4 className="font-bold text-xs text-white line-clamp-1">{article.title}</h4>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-pink-400 uppercase">Editando Notícia</span>
+                  <span className="text-[9px] px-2 py-0.5 bg-green-500/15 text-green-400 font-mono rounded border border-green-500/30">
+                    {localCategory}
+                  </span>
+                </div>
+                <h4 className="font-bold text-xs text-white line-clamp-1">{localTitle || article.title}</h4>
                 <span className="text-[9px] text-zinc-500 block">ID: {article.id}</span>
               </div>
 
-              {/* LIVE CONTENT FORM */}
+              {/* CATEGORY SELECTOR */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono uppercase text-zinc-400 font-bold block">
+                  Categoria da Notícia / Matéria:
+                </label>
+                <select
+                  value={localCategory}
+                  onChange={(e) => setLocalCategory(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-stone-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-green-400 font-mono"
+                >
+                  <option value="NOTÍCIAS">NOTÍCIAS</option>
+                  <option value="EVENTOS">EVENTOS</option>
+                  <option value="CURSOS">CURSOS</option>
+                  <option value="VAGA DE EMPREGOS">VAGA DE EMPREGOS</option>
+                  <option value="PODCAST">PODCAST</option>
+                  <option value="COMUNIDADE">COMUNIDADE (🔒 VIP)</option>
+                  <option value="EMBAIXADORES">EMBAIXADORES (🔒 VIP)</option>
+                  <option value="TOUR">TOUR GASTRO</option>
+                  <option value="PARCEIROS">PARCEIROS</option>
+                  <option value="QUEM SOMOS">QUEM SOMOS</option>
+                </select>
+              </div>
+
+              {/* TITLE & EXCERPT FORM */}
               <div className="space-y-3">
                 <label className="text-[10px] font-mono uppercase text-zinc-400 font-bold block">
-                  Conteúdo Rápido do Card:
+                  Título e Resumo:
                 </label>
                 <div className="space-y-2">
                   <input
                     type="text"
                     value={localTitle}
                     onChange={(e) => setLocalTitle(e.target.value)}
-                    placeholder="Título do card..."
-                    className="w-full p-2.5 rounded-lg bg-stone-900 border border-zinc-880 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-green-400"
+                    placeholder="Título da notícia..."
+                    className="w-full p-2.5 rounded-lg bg-stone-900 border border-zinc-880 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-green-400 font-bold"
                   />
                   <textarea
                     value={localExcerpt}
                     onChange={(e) => setLocalExcerpt(e.target.value)}
-                    placeholder="Texto descritivo..."
+                    placeholder="Linha fina / Texto descritivo curto..."
                     rows={2}
                     className="w-full p-2.5 rounded-lg bg-stone-900 border border-zinc-880 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-green-400"
                   />
                 </div>
+              </div>
+
+              {/* FULL CONTENT BODY TEXTAREA */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono uppercase text-zinc-400 font-bold block">
+                  Conteúdo Completo da Matéria:
+                </label>
+                <textarea
+                  value={localContent}
+                  onChange={(e) => setLocalContent(e.target.value)}
+                  placeholder="Insira o texto completo da notícia aqui..."
+                  rows={6}
+                  className="w-full p-2.5 rounded-lg bg-stone-900 border border-zinc-880 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-green-400 font-sans leading-relaxed"
+                />
+              </div>
+
+              {/* EXTERNAL LINK / REGISTRATION */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono uppercase text-zinc-400 font-bold block">
+                  Link Externo / WhatsApp / Inscrições (Opcional):
+                </label>
+                <input
+                  type="text"
+                  value={localLinkUrl}
+                  onChange={(e) => setLocalLinkUrl(e.target.value)}
+                  placeholder="https://exemplo.com ou https://wa.me/..."
+                  className="w-full p-2.5 rounded-lg bg-stone-900 border border-zinc-880 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-green-400 font-mono"
+                />
               </div>
 
               {/* IMAGE SWAPPING SECTION */}
@@ -558,6 +656,53 @@ export default function VisualEditorPanel({
                     ))}
                   </div>
                 </div>
+              </div>
+
+              {/* AUTHOR, LOCATION, DATE AND TAGS */}
+              <div className="grid grid-cols-2 gap-3 border-t border-zinc-900 pt-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase text-zinc-500 font-bold block">Autor</label>
+                  <input
+                    type="text"
+                    value={localAuthor}
+                    onChange={(e) => setLocalAuthor(e.target.value)}
+                    className="w-full p-2 rounded bg-stone-900 border border-zinc-850 text-[10px]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-mono uppercase text-zinc-500 font-bold block">Localização</label>
+                  <input
+                    type="text"
+                    value={localLocation}
+                    onChange={(e) => setLocalLocation(e.target.value)}
+                    className="w-full p-2 rounded bg-stone-900 border border-zinc-850 text-[10px]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono uppercase text-zinc-500 font-bold block">Tags (separadas por vírgula)</label>
+                <input
+                  type="text"
+                  value={localTags}
+                  onChange={(e) => setLocalTags(e.target.value)}
+                  placeholder="Notícia, Inovação, Economia"
+                  className="w-full p-2 rounded bg-stone-900 border border-zinc-850 text-[10px]"
+                />
+              </div>
+
+              {/* VIP / PREMIUM CHECKBOX */}
+              <div className="flex items-center gap-2 p-2.5 bg-zinc-900/40 rounded-lg border border-zinc-850">
+                <input
+                  type="checkbox"
+                  id="chk-is-premium"
+                  checked={localIsPremium}
+                  onChange={(e) => setLocalIsPremium(e.target.checked)}
+                  className="rounded text-pink-500 focus:ring-0 bg-zinc-900 border-zinc-800"
+                />
+                <label htmlFor="chk-is-premium" className="text-[10px] text-zinc-300 font-mono cursor-pointer font-bold flex items-center gap-1">
+                  🔒 Conteúdo Exclusivo VIP / Membros
+                </label>
               </div>
 
               {/* IMAGE HEIGHT DIMENSION SLIDER */}
@@ -735,28 +880,6 @@ export default function VisualEditorPanel({
                       {opt.label}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              {/* AUTHOR AND DETAILS METADATA */}
-              <div className="grid grid-cols-2 gap-3 border-t border-zinc-900 pt-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] font-mono uppercase text-zinc-500 font-bold block">Autor</label>
-                  <input
-                    type="text"
-                    value={localAuthor}
-                    onChange={(e) => setLocalAuthor(e.target.value)}
-                    className="w-full p-2 rounded bg-stone-900 border border-zinc-850 text-[10px]"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] font-mono uppercase text-zinc-500 font-bold block">Localização</label>
-                  <input
-                    type="text"
-                    value={localLocation}
-                    onChange={(e) => setLocalLocation(e.target.value)}
-                    className="w-full p-2 rounded bg-stone-900 border border-zinc-850 text-[10px]"
-                  />
                 </div>
               </div>
 

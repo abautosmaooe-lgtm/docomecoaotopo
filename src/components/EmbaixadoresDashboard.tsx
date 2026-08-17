@@ -106,7 +106,7 @@ export const OFFICIAL_AMBASSADORS: OfficialAmbassador[] = [
     name: 'Flávia Reis da Silva Lopes',
     specialty: 'Embaixadora Consultora e Especialista Tributária',
     instagram: '@flaviia_reis',
-    photoUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=600',
+    photoUrl: 'https://i.ibb.co/XxdCnNqy/embaixadora-fl-via.jpg',
     fullName: 'Flávia Reis da Silva Lopes',
     functionAsAmbassador: 'Presto consultoria tributária para empresários. Meu trabalho é traçar a melhor estratégia econômica tributária e financeira para as empresas para que pagem menos tributos, faço isso por meio do planejamento tributário.',
     academicBackground: 'Ciências Contábeis',
@@ -809,55 +809,57 @@ export default function EmbaixadoresDashboard({ isDarkMode, isAdmin = false, use
         </div>
       </div>
 
-      {/* CADASTRO STATUS BAR/WIDGET */}
-      <div className={`p-4 rounded-2xl border transition duration-300 flex flex-col md:flex-row items-center justify-between gap-4 ${
-        userCadastro.nome 
-          ? "bg-pink-500/5 border-pink-500/20" 
-          : "bg-amber-500/5 border-amber-500/20"
-      }`}>
-        <div className="flex items-center gap-3 w-full">
-          <div className={`p-2.5 rounded-xl shrink-0 ${
-            userCadastro.nome ? "bg-pink-500/10 text-pink-400" : "bg-amber-500/10 text-amber-400"
-          }`}>
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div className="space-y-1 text-left">
-            <h4 className="font-display font-black text-xs uppercase tracking-wider text-white">
-              {userCadastro.nome ? "✓ Seu Cadastro de Embaixador VIP está Ativo e Atualizado" : "⚠️ Perfil Pendente de Informações Obrigatórias"}
-            </h4>
-            <p className="text-[11px] text-zinc-400 leading-relaxed font-mono">
-              {userCadastro.nome 
-                ? `Nome: ${userCadastro.nome} | CPF: ${userCadastro.cpf || "Pendente"} | WhatsApp: ${userCadastro.whatsapp || "Pendente"} | Atuação: ${userCadastro.areaAtuacao || "Pendente"}`
-                : "Seu cadastro de Embaixador precisa ser atualizado com Nome Completo, Endereço Completo, WhatsApp, E-mail, CPF e Área de Atuação."}
-            </p>
-            {userCadastro.nome && userCadastro.endereco && (
-              <p className="text-[10px] text-zinc-500 leading-none font-mono">
-                Endereço: <span className="text-zinc-400">{userCadastro.endereco}</span> | E-mail: <span className="text-zinc-400">{userCadastro.email}</span>
+      {/* CADASTRO STATUS BAR/WIDGET (Admin Only) */}
+      {isAdmin && (
+        <div className={`p-4 rounded-2xl border transition duration-300 flex flex-col md:flex-row items-center justify-between gap-4 ${
+          userCadastro.nome 
+            ? "bg-pink-500/5 border-pink-500/20" 
+            : "bg-amber-500/5 border-amber-500/20"
+        }`}>
+          <div className="flex items-center gap-3 w-full">
+            <div className={`p-2.5 rounded-xl shrink-0 ${
+              userCadastro.nome ? "bg-pink-500/10 text-pink-400" : "bg-amber-500/10 text-amber-400"
+            }`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div className="space-y-1 text-left">
+              <h4 className="font-display font-black text-xs uppercase tracking-wider text-white">
+                {userCadastro.nome ? "✓ Seu Cadastro de Embaixador VIP está Ativo e Atualizado" : "⚠️ Perfil Pendente de Informações Obrigatórias"}
+              </h4>
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-mono">
+                {userCadastro.nome 
+                  ? `Nome: ${userCadastro.nome} | CPF: ${userCadastro.cpf || "Pendente"} | WhatsApp: ${userCadastro.whatsapp || "Pendente"} | Atuação: ${userCadastro.areaAtuacao || "Pendente"}`
+                  : "Seu cadastro de Embaixador precisa ser atualizado com Nome Completo, Endereço Completo, WhatsApp, E-mail, CPF e Área de Atuação."}
               </p>
-            )}
+              {userCadastro.nome && userCadastro.endereco && (
+                <p className="text-[10px] text-zinc-500 leading-none font-mono">
+                  Endereço: <span className="text-zinc-400">{userCadastro.endereco}</span> | E-mail: <span className="text-zinc-400">{userCadastro.email}</span>
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { playClickSound(650, "sine"); openCadastroModal(); }}
+              className={`px-4 py-2 font-mono text-xs font-black uppercase rounded-xl transition shrink-0 duration-200 ${
+                userCadastro.nome
+                  ? "bg-zinc-900 border border-pink-500/30 hover:border-pink-500 text-pink-400 hover:text-white"
+                  : "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
+              }`}
+            >
+              {userCadastro.nome ? "Atualizar Dados" : "Preencher Cadastro"}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-950/80 hover:bg-red-900/90 border border-red-500/30 text-red-300 rounded-xl text-xs font-mono font-black flex items-center gap-1.5 transition active:scale-95 shrink-0"
+              title="Sair do painel"
+            >
+              <X className="w-4 h-4 text-red-400" />
+              <span>SAIR</span>
+            </button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => { playClickSound(650, "sine"); openCadastroModal(); }}
-            className={`px-4 py-2 font-mono text-xs font-black uppercase rounded-xl transition shrink-0 duration-200 ${
-              userCadastro.nome
-                ? "bg-zinc-900 border border-pink-500/30 hover:border-pink-500 text-pink-400 hover:text-white"
-                : "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
-            }`}
-          >
-            {userCadastro.nome ? "Atualizar Dados" : "Preencher Cadastro"}
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-950/80 hover:bg-red-900/90 border border-red-500/30 text-red-300 rounded-xl text-xs font-mono font-black flex items-center gap-1.5 transition active:scale-95 shrink-0"
-            title="Sair do painel"
-          >
-            <X className="w-4 h-4 text-red-400" />
-            <span>SAIR</span>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* CORE STATS BLOCKS GROUP */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

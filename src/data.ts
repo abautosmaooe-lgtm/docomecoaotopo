@@ -205,6 +205,135 @@ Mais informações e inscrições: https://sa.unicornsummit.net/?utm_source=chat
     commentsCount: 19
   },
   {
+    id: "art-jf-polo-tech-inovacao",
+    title: "POLO TECNOLÓGICO DE JUIZ DE FORA ATRAI NOVOS INVESTIMENTOS E CONECTA STARTUPS AO MERCADO GLOBAL",
+    excerpt: "Ecossistema regional de inovação se destaca com aceleração de novos empreendimentos, inteligência artificial e parcerias estratégicas.",
+    content: `O ecossistema de inovação e tecnologia de Juiz de Fora e de toda a Zona da Mata mineira vive um dos momentos mais promissores de sua história. Com a presença de universidades de excelência como a UFJF, centros de pesquisa e uma comunidade vibrante de empreendedores, a cidade vem consolidando sua posição como um celeiro de novos unicórnios e soluções digitais de alto impacto.
+
+Empresas locais de tecnologia aplicada aos setores de varejo, saúde, agronegócio e serviços financeiros têm atraído a atenção de fundos de investimento nacionais e internacionais. Programas de mentoria e aceleração, somados à integração com eventos globais como o Unicorn Summit, impulsionam o intercâmbio de experiências e abrem portas para que talentos da nossa terra desenvolvam negócios de escala internacional.
+
+"Nosso compromisso é transformar conhecimento em prosperidade, conectando quem está começando com quem já alcançou o topo", destaca a curadoria de tecnologia do portal. A previsão é que até o final de 2026 novos editais e rodadas de negócios sejam realizados na cidade.`,
+    category: "NOTÍCIAS",
+    author: "Redação Do Começo ao Topo",
+    date: "2026-08-16T14:30:00Z",
+    readTime: "4 min",
+    imageUrl: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
+    views: 2890,
+    shares: 230,
+    likes: 740,
+    isPremium: false,
+    location: "Juiz de Fora - MG",
+    tags: ["Polo Tecnológico", "Inovação", "Startups", "Juiz de Fora", "Investimentos", "Tecnologia"],
+    commentsCount: 31
+  },
+  {
+    id: "art-empreendedorismo-feminino-recorde",
+    title: "EMPREENDEDORISMO FEMININO REGISTRA CRESCIMENTO RECORDE DE 38% NA ZONA DA MATA",
+    excerpt: "Pesquisa aponta aumento substancial de negócios liderados por mulheres nos setores de serviços, consultoria, saúde integrativa e tecnologia.",
+    content: `A força da liderança feminina nos negócios ganhou números expressivos neste segundo semestre. De acordo com levantamento recente do setor econômico regional, o número de micro, pequenas e médias empresas fundadas ou administradas por mulheres cresceu 38% na Zona da Mata mineira em comparação ao mesmo período do ano anterior.
+
+O protagonismo feminino tem se destacado não apenas no comércio tradicional, mas fortemente nas áreas de consultoria financeira, saúde e estética integrativa, marketing digital e gastronomia autoral. Redes de apoio, como a Comunidade VIP do portal Do Começo ao Topo e o Conselho de Embaixadoras, desempenham papel crucial ao fornecer capacitação contínua, mentorias e conexões estratégicas de alto valor.
+
+"Quando uma mulher prospera, toda a comunidade ao seu redor se fortalece", ressaltam as lideranças do movimento. O portal continuará acompanhando e dando visibilidade às trajetórias inspiradoras que movimentam a nossa economia.`,
+    category: "NOTÍCIAS",
+    author: "Observatório Econômico Regional",
+    date: "2026-08-14T11:00:00Z",
+    readTime: "4 min",
+    imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80",
+    views: 3410,
+    shares: 310,
+    likes: 920,
+    isPremium: false,
+    location: "Zona da Mata e Sudeste de Minas",
+    tags: ["Empreendedorismo Feminino", "Liderança", "Economia", "Zona da Mata", "Negócios"],
+    commentsCount: 45
+  },
+  {
+    id: "art-reforma-tributaria-impacto-empresas",
+    title: "REFORMA TRIBUTÁRIA: GUIA PRÁTICO PARA AS EMPRESAS DA ZONA DA MATA SE PREPARAREM",
+    excerpt: "Especialistas alertam sobre a importância do planejamento tributário antecipado e da digitalização de processos fiscais para 2026 e 2027.",
+    content: `Com o avanço da regulamentação da Reforma Tributária no Brasil, empresários de todos os portes precisam ficar atentos às novas diretrizes que entrarão em vigor nos próximos períodos fiscais. A transição gradual dos impostos atuais para o modelo de IVA dual exigirá revisão de contratos, adequação de sistemas emissores e planejamento minucioso de custos.
+
+Especialistas da área tributária reforçam que a antecipação é o maior diferencial competitivo:
+1. Mapeamento preciso de entradas e saídas e análise de créditos tributários acumulados.
+2. Atualização dos sistemas de gestão contábil e emissão eletrônica de notas.
+3. Treinamento de equipes administrativas e comerciais para a correta precificação sob a nova lógica fiscal.
+
+Acompanhe as coberturas completas e workshops temáticos exclusivos promovidos pelo Portal Do Começo ao Topo com as maiores autoridades do setor.`,
+    category: "NOTÍCIAS",
+    author: "Flávia Reis - Especialista Tributária",
+    date: "2026-08-12T16:00:00Z",
+    readTime: "5 min",
+    imageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
+    views: 2650,
+    shares: 195,
+    likes: 580,
+    isPremium: false,
+    location: "Minas Gerais",
+    tags: ["Reforma Tributária", "Finanças", "Gestão", "Tributos", "Flávia Reis"],
+    commentsCount: 28
+  },
+  {
+    id: "art-credito-incentivo-empresas-locais",
+    title: "NOVAS LINHAS DE CRÉDITO E INCENTIVOS AO CRÉDITO LOCAL IMPULSIONAM PEQUENOS NEGÓCIOS EM MG",
+    excerpt: "Parcerias institucionais e cooperativas de crédito anunciam taxas reduzidas para fomento ao comércio e serviços regionais.",
+    content: `Uma nova rodada de fomento ao crédito produtivo foi anunciada para apoiar micro e pequenos empresários em Juiz de Fora e cidades vizinhas. Com condições facilitadas de carência e prazos estendidos, os recursos destinam-se à modernização de equipamentos, expansão de estoque e implantação de ferramentas digitais de atendimento.
+
+As cooperativas de crédito da região têm sido fundamentais nesse processo, promovendo um atendimento humanizado e soluções personalizadas que mantêm o capital circulando dentro do próprio município, impulsionando a geração de empregos e renda.`,
+    category: "NOTÍCIAS",
+    author: "Equipe Editorial de Economia",
+    date: "2026-08-10T10:30:00Z",
+    readTime: "3 min",
+    imageUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80",
+    views: 1980,
+    shares: 140,
+    likes: 460,
+    isPremium: false,
+    location: "Juiz de Fora e Região",
+    tags: ["Crédito", "Economia", "Pequenos Negócios", "Finanças", "Desenvolvimento"],
+    commentsCount: 17
+  },
+  {
+    id: "art-abertura-empresas-jf-lideranca",
+    title: "JUIZ DE FORA LIDERA O RANKING DE VELOCIDADE NA ABERTURA DE NOVAS EMPRESAS NO ESTADO",
+    excerpt: "Desburocratização e processos digitais colocam a cidade entre os municípios mais ágeis para quem deseja abrir seu próprio negócio.",
+    content: `Juiz de Fora alcançou mais uma marca histórica: o tempo médio para abertura e regularização de novos negócios caiu significativamente nos últimos meses, consolidando o município como um dos mais atrativos para investidores em Minas Gerais.
+
+A integração de órgãos municipais com a Junta Comercial do Estado e a digitalização de alvarás contribuíram diretamente para esse resultado. Com o ecossistema Do Começo ao Topo, os novos empreendedores contam ainda com uma vitrine estruturada para apresentar suas marcas e estabelecer redes de clientes desde o primeiro dia de funcionamento.`,
+    category: "NOTÍCIAS",
+    author: "Jornalismo Do Começo ao Topo",
+    date: "2026-08-08T08:45:00Z",
+    readTime: "3 min",
+    imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80",
+    views: 2210,
+    shares: 165,
+    likes: 510,
+    isPremium: false,
+    location: "Juiz de Fora",
+    tags: ["Juiz de Fora", "Abertura de Empresas", "Desburocratização", "Negócios", "Economia"],
+    commentsCount: 21
+  },
+  {
+    id: "art-historias-inspiradoras-topo",
+    title: "HISTÓRIAS DE SUCESSO: EMPREENDEDORAS DE JUIZ DE FORA EXPANDEM MARCAS PARA TODO O BRASIL",
+    excerpt: "Conheça como marcas nascidas na região utilizaram networking, posicionamento digital e mentorias para conquistar clientes de ponta a ponta do país.",
+    content: `Transformar uma ideia embrionária em uma marca consolidada requer método, disciplina e conexões certas. Em nossa série especial de matérias, destacamos trajetórias de mulheres que começaram seus empreendimentos em Juiz de Fora e hoje atendem clientes em múltiplos estados brasileiros.
+
+Os pontos em comum entre essas jornadas de sucesso incluem o investimento constante em branding autêntico, presença estratégica nas redes sociais, relacionamento próximo com clientes e participação ativa em comunidades de negócios qualificadas. Confira a cobertura completa e inspire-se para dar o próximo passo no seu projeto!`,
+    category: "NOTÍCIAS",
+    author: "Conselho de Liderança Feminina",
+    date: "2026-08-06T15:20:00Z",
+    readTime: "4 min",
+    imageUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
+    views: 3100,
+    shares: 280,
+    likes: 830,
+    isPremium: false,
+    location: "Juiz de Fora e Sudeste de Minas",
+    tags: ["Histórias de Sucesso", "Inspiração", "Liderança Feminina", "Branding", "Do Começo ao Topo"],
+    commentsCount: 39
+  },
+  {
     id: "art-feira-inovacao-15-agosto",
     title: "15/08: FEIRA REGIONAL DE INOVAÇÃO, TECNOLOGIA & NEGÓCIOS",
     excerpt: "Startups e empresas locais apresentam soluções tecnológicas aplicadas ao comércio e serviços.",

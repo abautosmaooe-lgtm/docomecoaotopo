@@ -24,26 +24,28 @@ export default function MonthlyHighlightsSection({
   const [hasLiked, setHasLiked] = useState<Record<string, boolean>>({});
 
   // Photos state with local storage persistence
-  const DEFAULT_FALLBACK_PHOTO = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
+  const DEFAULT_UNICORN_PHOTO = "https://i.ibb.co/JFWwYRLQ/Whats-App-Image-2026-08-15-at-12-13-42-1.jpg";
+  const DEFAULT_JFSUMMIT_PHOTO = "https://i.ibb.co/0pR76ckr/Whats-App-Image-2026-08-15-at-12-13-51.jpg";
+  const DEFAULT_FALLBACK_PHOTO = DEFAULT_UNICORN_PHOTO;
 
   const [unicornPhoto, setUnicornPhoto] = useState<string>(() => {
     try {
       const stored = localStorage.getItem("app_highlight_photo_unicorn");
-      if (stored && !stored.startsWith("data:image/") && stored !== "/regina-profile.jpg") {
+      if (stored && !stored.startsWith("data:image/") && stored !== "/regina-profile.jpg" && !stored.includes("unsplash.com")) {
         return stored;
       }
     } catch (e) {}
-    return "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
+    return DEFAULT_UNICORN_PHOTO;
   });
 
   const [jfsummitPhoto, setJfsummitPhoto] = useState<string>(() => {
     try {
       const stored = localStorage.getItem("app_highlight_photo_jfsummit");
-      if (stored && !stored.startsWith("data:image/") && stored !== "/regina-profile.jpg") {
+      if (stored && !stored.startsWith("data:image/") && stored !== "/regina-profile.jpg" && !stored.includes("unsplash.com")) {
         return stored;
       }
     } catch (e) {}
-    return "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
+    return DEFAULT_JFSUMMIT_PHOTO;
   });
 
   // Modal editing state
@@ -53,6 +55,7 @@ export default function MonthlyHighlightsSection({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleOpenEdit = (target: "unicorn" | "jfsummit") => {
+    if (!directEditingMode) return;
     playClickSound(700, "sine");
     setEditingTarget(target);
     setTempUrl(target === "unicorn" ? unicornPhoto : jfsummitPhoto);
@@ -107,12 +110,11 @@ export default function MonthlyHighlightsSection({
   };
 
   const handleResetPhoto = (target: "unicorn" | "jfsummit") => {
-    const defaultUrl = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
     if (target === "unicorn") {
-      setUnicornPhoto(defaultUrl);
+      setUnicornPhoto(DEFAULT_UNICORN_PHOTO);
       try { localStorage.removeItem("app_highlight_photo_unicorn"); } catch (e) {}
     } else {
-      setJfsummitPhoto(defaultUrl);
+      setJfsummitPhoto(DEFAULT_JFSUMMIT_PHOTO);
       try { localStorage.removeItem("app_highlight_photo_jfsummit"); } catch (e) {}
     }
     toast.info("Foto restaurada para o padrão.");
@@ -271,16 +273,18 @@ export default function MonthlyHighlightsSection({
                   </div>
 
                   {/* EDIT PHOTO BUTTON */}
-                  <button
-                    onClick={() => handleOpenEdit("unicorn")}
-                    className="absolute inset-0 bg-black/75 rounded-2xl flex flex-col items-center justify-center gap-1 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200 border-2 border-green-400 shadow-xl cursor-pointer"
-                    title="Clique para alterar a foto do destaque"
-                  >
-                    <Camera className="w-5 h-5 text-green-400" />
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-center px-1">
-                      Trocar Foto
-                    </span>
-                  </button>
+                  {directEditingMode && (
+                    <button
+                      onClick={() => handleOpenEdit("unicorn")}
+                      className="absolute inset-0 bg-black/75 rounded-2xl flex flex-col items-center justify-center gap-1 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200 border-2 border-green-400 shadow-xl cursor-pointer"
+                      title="Clique para alterar a foto do destaque"
+                    >
+                      <Camera className="w-5 h-5 text-green-400" />
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-center px-1">
+                        Trocar Foto
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 text-xs text-zinc-300">
@@ -301,12 +305,14 @@ export default function MonthlyHighlightsSection({
                   </div>
                   
                   {/* Quick Edit button helper */}
-                  <button
-                    onClick={() => handleOpenEdit("unicorn")}
-                    className="mt-1 inline-flex items-center gap-1 text-[10px] font-mono font-bold text-green-400 hover:text-green-300 underline"
-                  >
-                    <Camera className="w-3 h-3" /> Editar foto deste destaque
-                  </button>
+                  {directEditingMode && (
+                    <button
+                      onClick={() => handleOpenEdit("unicorn")}
+                      className="mt-1 inline-flex items-center gap-1 text-[10px] font-mono font-bold text-green-400 hover:text-green-300 underline cursor-pointer"
+                    >
+                      <Camera className="w-3 h-3" /> Editar foto deste destaque
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -422,16 +428,18 @@ export default function MonthlyHighlightsSection({
                   </div>
 
                   {/* EDIT PHOTO BUTTON */}
-                  <button
-                    onClick={() => handleOpenEdit("jfsummit")}
-                    className="absolute inset-0 bg-black/75 rounded-2xl flex flex-col items-center justify-center gap-1 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200 border-2 border-pink-400 shadow-xl cursor-pointer"
-                    title="Clique para alterar a foto do destaque"
-                  >
-                    <Camera className="w-5 h-5 text-pink-400" />
-                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-center px-1">
-                      Trocar Foto
-                    </span>
-                  </button>
+                  {directEditingMode && (
+                    <button
+                      onClick={() => handleOpenEdit("jfsummit")}
+                      className="absolute inset-0 bg-black/75 rounded-2xl flex flex-col items-center justify-center gap-1 text-white opacity-0 group-hover/photo:opacity-100 transition-opacity duration-200 border-2 border-pink-400 shadow-xl cursor-pointer"
+                      title="Clique para alterar a foto do destaque"
+                    >
+                      <Camera className="w-5 h-5 text-pink-400" />
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-center px-1">
+                        Trocar Foto
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 text-xs text-zinc-300">
@@ -452,12 +460,14 @@ export default function MonthlyHighlightsSection({
                   </div>
 
                   {/* Quick Edit button helper */}
-                  <button
-                    onClick={() => handleOpenEdit("jfsummit")}
-                    className="mt-1 inline-flex items-center gap-1 text-[10px] font-mono font-bold text-pink-400 hover:text-pink-300 underline"
-                  >
-                    <Camera className="w-3 h-3" /> Editar foto deste destaque
-                  </button>
+                  {directEditingMode && (
+                    <button
+                      onClick={() => handleOpenEdit("jfsummit")}
+                      className="mt-1 inline-flex items-center gap-1 text-[10px] font-mono font-bold text-pink-400 hover:text-pink-300 underline cursor-pointer"
+                    >
+                      <Camera className="w-3 h-3" /> Editar foto deste destaque
+                    </button>
+                  )}
                 </div>
               </div>
 

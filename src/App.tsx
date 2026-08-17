@@ -204,8 +204,11 @@ export default function App() {
     if (clean === "/parceiros") {
       return { category: null, section: "PARCEIROS" };
     }
-    if (clean === "/anuncie" || clean === "/anuncie-aqui") {
+    if (clean === "/anuncie" || clean === "/anuncie-aqui" || clean === "/quero-anunciar") {
       return { category: null, section: "ANUNCIE AQUI" };
+    }
+    if (clean === "/fazer-parte" || clean === "/quero-fazer-parte" || clean === "/membership") {
+      return { category: null, section: "QUERO FAZER PARTE" };
     }
     if (clean === "/podcast") {
       return { category: "PODCAST" as CategoryType, section: "PODCAST" };
@@ -261,7 +264,8 @@ export default function App() {
     else if (activeSection === "GALERIA") targetPath = "/galeria";
     else if (activeSection === "DEPOIMENTOS") targetPath = "/depoimentos";
     else if (activeSection === "PARCEIROS") targetPath = "/parceiros";
-    else if (activeSection === "ANUNCIE AQUI") targetPath = "/anuncie";
+    else if (activeSection === "ANUNCIE AQUI" || activeSection === "QUERO ANUNCIAR") targetPath = "/anuncie";
+    else if (activeSection === "QUERO FAZER PARTE" || activeSection === "membership") targetPath = "/fazer-parte";
     else if (activeSection === "RSVP") targetPath = "/rsvp";
     else if (activeSection === "CATEGORIAS") targetPath = "/categorias";
     else if (selectedCategory === "COMUNIDADE") targetPath = "/comunidade";
@@ -397,19 +401,14 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           if (!parsed.includes("advertising")) {
-            const memIndex = parsed.indexOf("membership");
-            if (memIndex !== -1) {
-              parsed.splice(memIndex + 1, 0, "advertising");
-            } else {
-              parsed.push("advertising");
-            }
+            parsed.push("advertising");
             localStorage.setItem("homepage_sections_order", JSON.stringify(parsed));
           }
           return parsed;
         }
       } catch (err) {}
     }
-    return ["ticker", "hero", "membership", "advertising", "testimonials", "feed", "ads", "partners"];
+    return ["ticker", "hero", "feed", "partners", "membership", "advertising", "testimonials", "ads"];
   });
 
   const getSectionLabel = (id: string) => {
@@ -2379,22 +2378,17 @@ export default function App() {
               <button
                 onClick={() => {
                   playClickSound(635, "sine");
+                  setActiveSection("QUERO FAZER PARTE");
                   setSelectedCategory(null);
-                  setActiveSection(null);
                   setNavInicioOpen(false);
                   setNavRamosOpen(false);
                   setNavEventosOpen(false);
                   setNavContatoOpen(false);
-                  setTimeout(() => {
-                    const el = document.getElementById("homepage-section-membership") || document.getElementById("comunidade-section-root");
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth" });
-                    }
-                  }, 100);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={`py-1 transition-all flex items-center gap-1.5 font-bold ${
-                  activeSection === "membership"
-                    ? "text-pink-400"
+                  activeSection === "QUERO FAZER PARTE" || activeSection === "membership"
+                    ? "text-pink-400 font-black"
                     : isDarkMode ? "text-pink-400 hover:text-pink-300" : "text-pink-600 hover:text-pink-700"
                 }`}
                 title="Conheça os planos e faça parte da nossa comunidade"
@@ -3241,9 +3235,9 @@ export default function App() {
 
               </div>
 
-              {/* FLOATING SUB-SECTIONS ROUTER FOR MENU ITEMS (Quem Somos, Objetivos, Onde Estamos, Parceiros, Contato) */}
+              {/* FLOATING SUB-SECTIONS ROUTER FOR MENU ITEMS (Quem Somos, Objetivos, Onde Estamos) */}
               <AnimatePresence>
-                {activeSection && activeSection !== "GALERIA" && (
+                {activeSection && (activeSection === "QUEM SOMOS" || activeSection === "OBJETIVOS" || activeSection === "ONDE ESTAMOS") && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -4431,7 +4425,7 @@ export default function App() {
                         {/* Embedded Google My Maps */}
                         <div className="lg:col-span-7 h-[380px] bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden relative shadow-2xl group">
                           {/* Top sleek status rail */}
-                          <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-lg bg-black/85 backdrop-blur border border-zinc-800 text-[9px] font-mono text-zinc-455 uppercase tracking-widest font-black flex items-center gap-1.5 shadow-md">
+                          <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-lg bg-black/85 backdrop-blur border border-zinc-800 text-[9px] font-mono text-zinc-400 uppercase tracking-widest font-black flex items-center gap-1.5 shadow-md">
                             <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
                             <span className="text-zinc-300">Mapa Carregado</span>
                           </div>
@@ -4446,128 +4440,6 @@ export default function App() {
                             title="Mapa Onde Estamos - Do Começo ao Topo"
                           />
                         </div>
-                      </div>
-                    )}
-
-                    {activeSection === "ANUNCIE AQUI" && (
-                      <div className="space-y-4">
-                        {isDirectEditingEnabled ? (
-                          <div className="space-y-4 bg-zinc-950/60 p-5 rounded-2xl border border-zinc-850 text-left">
-                            <span className="text-[9px] font-mono font-black text-green-400 uppercase tracking-wider block border-b border-zinc-900 pb-1 text-center">✍️ EDITAR PÁGINA "ANUNCIE AQUI"</span>
-                            
-                            <div className="space-y-3">
-                              <div>
-                                <label className="text-[8px] font-mono font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Parágrafo de Introdução</label>
-                                <textarea
-                                  value={portalPagesConfig.anunciePara1}
-                                  onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anunciePara1: e.target.value })}
-                                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-green-500 font-sans"
-                                  rows={3}
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                {/* Col 1 */}
-                                <div className="space-y-2 p-3 bg-zinc-950 rounded-xl border border-zinc-900">
-                                  <label className="text-[8px] font-mono font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Título Seção 1</label>
-                                  <input
-                                    type="text"
-                                    value={portalPagesConfig.anuncieSec1Title}
-                                    onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieSec1Title: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-green-500 font-bold"
-                                  />
-                                  <label className="text-[8px] font-mono font-black text-zinc-500 uppercase tracking-widest block mb-0.5">Texto Seção 1</label>
-                                  <textarea
-                                    value={portalPagesConfig.anuncieSec1Text}
-                                    onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieSec1Text: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-green-500"
-                                    rows={3}
-                                  />
-                                </div>
-                                {/* Col 2 */}
-                                <div className="space-y-2 p-3 bg-zinc-950 rounded-xl border border-zinc-900">
-                                  <label className="text-[8px] font-mono font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Título Seção 2</label>
-                                  <input
-                                    type="text"
-                                    value={portalPagesConfig.anuncieSec2Title}
-                                    onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieSec2Title: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-green-500 font-bold"
-                                  />
-                                  <label className="text-[8px] font-mono font-black text-zinc-500 uppercase tracking-widest block mb-0.5">Texto Seção 2</label>
-                                  <textarea
-                                    value={portalPagesConfig.anuncieSec2Text}
-                                    onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieSec2Text: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-green-500"
-                                    rows={3}
-                                  />
-                                </div>
-                                {/* Col 3 */}
-                                <div className="space-y-2 p-3 bg-zinc-950 rounded-xl border border-zinc-900">
-                                  <label className="text-[8px] font-mono font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Título Seção 3</label>
-                                  <input
-                                    type="text"
-                                    value={portalPagesConfig.anuncieSec3Title}
-                                    onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieSec3Title: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-green-500 font-bold"
-                                  />
-                                  <label className="text-[8px] font-mono font-black text-zinc-500 uppercase tracking-widest block mb-0.5">Texto Seção 3</label>
-                                  <textarea
-                                    value={portalPagesConfig.anuncieSec3Text}
-                                    onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieSec3Text: e.target.value })}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-green-500"
-                                    rows={3}
-                                  />
-                                </div>
-                              </div>
-
-                              <div>
-                                <label className="text-[8px] font-mono font-black text-zinc-400 uppercase tracking-widest block mb-0.5">E-mail Comercial de Anúncios</label>
-                                <input
-                                  type="text"
-                                  value={portalPagesConfig.anuncieEmail}
-                                  onChange={(e) => handleSavePortalPagesConfig({ ...portalPagesConfig, anuncieEmail: e.target.value })}
-                                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-green-500 font-sans"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-xs leading-relaxed text-zinc-350">
-                              {portalPagesConfig.anunciePara1}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                              <div className="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800 space-y-1">
-                                <span className="text-[#22c55e] font-bold font-mono text-[11px] uppercase block">{portalPagesConfig.anuncieSec1Title}</span>
-                                <p className="text-[10.5px] text-zinc-450 leading-relaxed">{portalPagesConfig.anuncieSec1Text}</p>
-                              </div>
-                              <div className="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800 space-y-1">
-                                <span className="text-[#22c55e] font-bold font-mono text-[11px] uppercase block">{portalPagesConfig.anuncieSec2Title}</span>
-                                <p className="text-[10.5px] text-zinc-450 leading-relaxed">{portalPagesConfig.anuncieSec2Text}</p>
-                              </div>
-                              <div className="p-4 bg-zinc-900/60 rounded-xl border border-zinc-800 space-y-1">
-                                <span className="text-[#22c55e] font-bold font-mono text-[11px] uppercase block">{portalPagesConfig.anuncieSec3Title}</span>
-                                <p className="text-[10.5px] text-zinc-450 leading-relaxed">{portalPagesConfig.anuncieSec3Text}</p>
-                              </div>
-                            </div>
-
-                            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl space-y-2 mt-2">
-                              <h4 className="text-xs font-bold text-green-400 uppercase tracking-wide">Fale Conosco para Anunciar</h4>
-                              <p className="text-[11px] text-zinc-300 leading-relaxed">
-                                Interessado em ver sua marca em destaque? Envie uma mensagem rápida no formulário de <strong>Contato</strong> em nosso menu superior ou nos envie um e-mail em <strong className="text-green-400">{portalPagesConfig.anuncieEmail}</strong> para solicitar nosso Media Kit completo com estatísticas de acessos.
-                              </p>
-                              <button
-                                onClick={() => {
-                                  setActiveSection("CONTATO");
-                                  window.scrollTo({ top: 300, behavior: "smooth" });
-                                }}
-                                className="px-4 py-1.5 text-[10px] font-mono font-bold bg-green-500 hover:bg-green-400 text-black rounded uppercase transition"
-                              >
-                                Ir para o Formulário de Contato →
-                              </button>
-                            </div>
-                          </>
-                        )}
                       </div>
                     )}
                   </motion.div>
@@ -4661,9 +4533,49 @@ export default function App() {
                     onSaveConfig={handleSavePortalPagesConfig}
                   />
                 </div>
-              ) : activeSection === "PARCEIROS" || selectedCategory === "PARCEIROS" || activeSection === "ANUNCIE AQUI" ? (
-                <div id="parceiros-page-root" className="py-8 px-4 max-w-7xl mx-auto space-y-6 animate-fade-in">
-                  <div className="text-center space-y-2 mb-8">
+              ) : activeSection === "QUERO FAZER PARTE" || activeSection === "FAZER PARTE" || activeSection === "membership" ? (
+                <div id="fazer-parte-page-root" className="py-8 px-4 max-w-7xl mx-auto space-y-8 animate-fade-in">
+                  <div className="text-center space-y-2 mb-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 font-mono text-[10px] uppercase font-bold tracking-widest mb-2">
+                      <Crown className="w-3.5 h-3.5" /> Comunidade & Acesso Oficial
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-display font-black text-white uppercase tracking-tight">
+                      Quero <span className="text-pink-500">Fazer Parte</span>
+                    </h2>
+                    <p className="text-xs md:text-sm text-zinc-400 font-mono max-w-2xl mx-auto leading-relaxed">
+                      Escolha seu plano na Comunidade do Começo ao Topo, acesse networking de alto impacto, capacitações e eventos exclusivos.
+                    </p>
+                  </div>
+                  {/* 1. QUERO FAZER PARTE */}
+                  <CommunityMembership isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                  {/* 2. PUBLICIDADE NO PORTAL */}
+                  <div className="pt-8 border-t border-zinc-800/80">
+                    <PortalAdvertising isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                  </div>
+                </div>
+              ) : activeSection === "ANUNCIE AQUI" || activeSection === "QUERO ANUNCIAR" ? (
+                <div id="anuncie-page-root" className="py-8 px-4 max-w-7xl mx-auto space-y-8 animate-fade-in">
+                  <div className="text-center space-y-2 mb-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 font-mono text-[10px] uppercase font-bold tracking-widest mb-2">
+                      <Megaphone className="w-3.5 h-3.5" /> Publicidade & Patrocínio
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-display font-black text-white uppercase tracking-tight">
+                      Quero <span className="text-green-400">Anunciar</span>
+                    </h2>
+                    <p className="text-xs md:text-sm text-zinc-400 font-mono max-w-2xl mx-auto leading-relaxed">
+                      Conecte sua marca a milhares de líderes e tomadores de decisão através de cotas de publicidade no portal e patrocínios estratégicos.
+                    </p>
+                  </div>
+                  {/* 1. PUBLICIDADE NO PORTAL */}
+                  <PortalAdvertising isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                  {/* 2. QUERO FAZER PARTE */}
+                  <div className="pt-8 border-t border-zinc-800/80">
+                    <CommunityMembership isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                  </div>
+                </div>
+              ) : activeSection === "PARCEIROS" || selectedCategory === "PARCEIROS" ? (
+                <div id="parceiros-page-root" className="py-8 px-4 max-w-7xl mx-auto space-y-8 animate-fade-in">
+                  <div className="text-center space-y-2 mb-6">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-[10px] uppercase font-bold tracking-widest mb-2">
                       <Handshake className="w-3.5 h-3.5" /> Ecossistema Colaborativo
                     </div>
@@ -4674,7 +4586,18 @@ export default function App() {
                       Empresas, instituições e marcas inovadoras que apoiam, capacitam e impulsionam o ecossistema regional e nacional.
                     </p>
                   </div>
-                  <PartnersCarousel isAdmin={isDirectEditingEnabled} />
+                  {/* 1. AS MARCAS DOS PARCEIROS (PRIMEIRO NA PÁGINA) */}
+                  <div className="bg-zinc-950/40 border border-zinc-800/80 rounded-3xl p-6 shadow-xl">
+                    <PartnersCarousel isAdmin={isDirectEditingEnabled} />
+                  </div>
+                  {/* 2. PUBLICIDADE NO PORTAL */}
+                  <div className="pt-6 border-t border-zinc-800/80">
+                    <PortalAdvertising isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                  </div>
+                  {/* 3. QUERO FAZER PARTE */}
+                  <div className="pt-6 border-t border-zinc-800/80">
+                    <CommunityMembership isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                  </div>
                 </div>
               ) : selectedCategory === "PODCAST" || activeSection === "PODCAST" ? (
                 <div id="podcast-page-root" className="py-8 px-4 max-w-7xl mx-auto space-y-6 animate-fade-in">
@@ -4832,6 +4755,22 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* DESTAQUES DO MÊS (REGINA SIMÕES - EMBAIXADORA UNICORN SUMMIT & JF SUMMIT 26) */}
+                  {(selectedCategory === "EVENTOS" || selectedCategory === null) && (
+                    <MonthlyHighlightsSection 
+                      isDarkMode={isDarkMode} 
+                      directEditingMode={isDirectEditingEnabled} 
+                    />
+                  )}
+
+                  {/* PROMINENT UPCOMING EVENTS SECTION (PALESTRA REFORMA TRIBUTÁRIA / FLÁVIA REIS) */}
+                  {(selectedCategory === "EVENTOS" || selectedCategory === null) && (
+                    <UpcomingEventsSection 
+                      isDarkMode={isDarkMode} 
+                      directEditingMode={isDirectEditingEnabled} 
+                    />
+                  )}
+
                   {/* PODCAST PROMINENT YOUTUBE CHANNEL WIDGET */}
                   {selectedCategory === null && (
                     <div id="podcast-youtube-root-section">
@@ -4842,16 +4781,6 @@ export default function App() {
                         onOpenPip={(video) => setPipVideo(video)}
                       />
                     </div>
-                  )}
-
-                  {/* DESTAQUES DO MÊS (REGINA SIMÕES - EMBAIXADORA UNICORN SUMMIT & JF SUMMIT 26) */}
-                  {(selectedCategory === "EVENTOS" || selectedCategory === null) && (
-                    <MonthlyHighlightsSection isDarkMode={isDarkMode} />
-                  )}
-
-                  {/* PROMINENT UPCOMING EVENTS SECTION (PALESTRA REFORMA TRIBUTÁRIA / FLÁVIA REIS) */}
-                  {(selectedCategory === "EVENTOS" || selectedCategory === null) && (
-                    <UpcomingEventsSection isDarkMode={isDarkMode} />
                   )}
 
                   {/* CARD RENDERER DYNAMIC ENGINE */}
@@ -5114,203 +5043,175 @@ export default function App() {
           )}
 
               {/* INTEGRATED NEWSLETTER PORTLET */}
-              <NewsletterSection
-                onAddSubscriber={(email, cats) => {
-                  setSubscribers((prev) => [...prev, { email, categories: cats }]);
-                }}
-                isDarkMode={isDarkMode}
-              />
+              {selectedCategory === null && activeSection === null && (
+                <NewsletterSection
+                  onAddSubscriber={(email, cats) => {
+                    setSubscribers((prev) => [...prev, { email, categories: cats }]);
+                  }}
+                  isDarkMode={isDarkMode}
+                />
+              )}
               </div> {/* End of homepage-section-feed */}
 
-              {/* PARTNERS SHOWCASE PRESENTATION */}
-              <div 
-                style={{ order: homepageSectionsOrder.indexOf("partners") }} 
-                className="relative group/section"
-                id="homepage-section-partners"
-              >
-                {isDirectEditingEnabled && (
-                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
-                    <div 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("partners"))}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("partners"))}
-                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
-                      title="Arraste para reordenar"
-                    >
-                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
-                    </div>
-                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">🤝 Parceiros</span>
-                    <button 
-                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("partners"))} 
-                      disabled={homepageSectionsOrder.indexOf("partners") === 0} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button 
-                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("partners"))} 
-                      disabled={homepageSectionsOrder.indexOf("partners") === homepageSectionsOrder.length - 1} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-                <PartnersCarousel isAdmin={isDirectEditingEnabled} />
-              </div>
-
               {/* MEMBERSHIP PLANOS DA COMUNIDADE (FAZER PARTE) */}
-              <div 
-                style={{ order: homepageSectionsOrder.indexOf("membership") }} 
-                className="relative group/section"
-                id="homepage-section-membership"
-              >
-                {isDirectEditingEnabled && (
-                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
-                    <div 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("membership"))}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("membership"))}
-                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
-                      title="Arraste para reordenar"
-                    >
-                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+              {selectedCategory === null && activeSection === null && (
+                <div 
+                  style={{ order: homepageSectionsOrder.indexOf("membership") }} 
+                  className="relative group/section"
+                  id="homepage-section-membership"
+                >
+                  {isDirectEditingEnabled && (
+                    <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                      <div 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("membership"))}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("membership"))}
+                        className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                        title="Arraste para reordenar"
+                      >
+                        <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                      </div>
+                      <span className="font-bold text-pink-400 uppercase mr-1 select-none">👑 Planos da Comunidade</span>
+                      <button 
+                        onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("membership"))} 
+                        disabled={homepageSectionsOrder.indexOf("membership") === 0} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("membership"))} 
+                        disabled={homepageSectionsOrder.indexOf("membership") === homepageSectionsOrder.length - 1} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
                     </div>
-                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">👑 Planos da Comunidade</span>
-                    <button 
-                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("membership"))} 
-                      disabled={homepageSectionsOrder.indexOf("membership") === 0} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button 
-                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("membership"))} 
-                      disabled={homepageSectionsOrder.indexOf("membership") === homepageSectionsOrder.length - 1} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-                <CommunityMembership isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
-              </div>
+                  )}
+                  <CommunityMembership isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                </div>
+              )}
 
               {/* PORTAL ADVERTISING (ANUNCIE AQUI - COTAS & PATROCINADOR) */}
-              <div 
-                style={{ order: homepageSectionsOrder.indexOf("advertising") }} 
-                className="relative group/section"
-                id="homepage-section-advertising"
-              >
-                {isDirectEditingEnabled && (
-                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
-                    <div 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("advertising"))}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("advertising"))}
-                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
-                      title="Arraste para reordenar"
-                    >
-                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+              {selectedCategory === null && activeSection === null && (
+                <div 
+                  style={{ order: homepageSectionsOrder.indexOf("advertising") }} 
+                  className="relative group/section"
+                  id="homepage-section-advertising"
+                >
+                  {isDirectEditingEnabled && (
+                    <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                      <div 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("advertising"))}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("advertising"))}
+                        className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                        title="Arraste para reordenar"
+                      >
+                        <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                      </div>
+                      <span className="font-bold text-pink-400 uppercase mr-1 select-none">📊 Publicidade (Cotas)</span>
+                      <button 
+                        onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("advertising"))} 
+                        disabled={homepageSectionsOrder.indexOf("advertising") === 0} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("advertising"))} 
+                        disabled={homepageSectionsOrder.indexOf("advertising") === homepageSectionsOrder.length - 1} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
                     </div>
-                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">📊 Publicidade (Cotas)</span>
-                    <button 
-                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("advertising"))} 
-                      disabled={homepageSectionsOrder.indexOf("advertising") === 0} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button 
-                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("advertising"))} 
-                      disabled={homepageSectionsOrder.indexOf("advertising") === homepageSectionsOrder.length - 1} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-                <PortalAdvertising isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
-              </div>
+                  )}
+                  <PortalAdvertising isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                </div>
+              )}
 
               {/* TESTIMONIALS SECTION */}
-              <div 
-                style={{ order: homepageSectionsOrder.indexOf("testimonials") }} 
-                className="relative group/section"
-                id="homepage-section-testimonials"
-              >
-                {isDirectEditingEnabled && (
-                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
-                    <div 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("testimonials"))}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("testimonials"))}
-                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
-                      title="Arraste para reordenar"
-                    >
-                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+              {selectedCategory === null && activeSection === null && (
+                <div 
+                  style={{ order: homepageSectionsOrder.indexOf("testimonials") }} 
+                  className="relative group/section"
+                  id="homepage-section-testimonials"
+                >
+                  {isDirectEditingEnabled && (
+                    <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                      <div 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("testimonials"))}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("testimonials"))}
+                        className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                        title="Arraste para reordenar"
+                      >
+                        <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                      </div>
+                      <span className="font-bold text-pink-400 uppercase mr-1 select-none">💬 Depoimentos</span>
+                      <button 
+                        onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("testimonials"))} 
+                        disabled={homepageSectionsOrder.indexOf("testimonials") === 0} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("testimonials"))} 
+                        disabled={homepageSectionsOrder.indexOf("testimonials") === homepageSectionsOrder.length - 1} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
                     </div>
-                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">💬 Depoimentos</span>
-                    <button 
-                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("testimonials"))} 
-                      disabled={homepageSectionsOrder.indexOf("testimonials") === 0} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button 
-                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("testimonials"))} 
-                      disabled={homepageSectionsOrder.indexOf("testimonials") === homepageSectionsOrder.length - 1} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-                <TestimonialShuffleCards isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
-              </div>
+                  )}
+                  <TestimonialShuffleCards isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                </div>
+              )}
 
               {/* ROTATING BANNER ADS */}
-              <div 
-                style={{ order: homepageSectionsOrder.indexOf("ads") }} 
-                className="relative group/section"
-                id="homepage-section-ads"
-              >
-                {isDirectEditingEnabled && (
-                  <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
-                    <div 
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("ads"))}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("ads"))}
-                      className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
-                      title="Arraste para reordenar"
-                    >
-                      <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+              {selectedCategory === null && activeSection === null && (
+                <div 
+                  style={{ order: homepageSectionsOrder.indexOf("ads") }} 
+                  className="relative group/section"
+                  id="homepage-section-ads"
+                >
+                  {isDirectEditingEnabled && (
+                    <div className="absolute top-2 right-2 z-40 flex items-center gap-2 bg-stone-950/95 border border-pink-500/50 rounded-xl px-2.5 py-1.5 shadow-2xl font-mono text-[9px] text-zinc-300 backdrop-blur-md opacity-0 group-hover/section:opacity-100 transition-opacity duration-200">
+                      <div 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, homepageSectionsOrder.indexOf("ads"))}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, homepageSectionsOrder.indexOf("ads"))}
+                        className="cursor-grab active:cursor-grabbing p-1 hover:text-pink-400 transition"
+                        title="Arraste para reordenar"
+                      >
+                        <GripVertical className="w-3.5 h-3.5 text-pink-500" />
+                      </div>
+                      <span className="font-bold text-pink-400 uppercase mr-1 select-none">🎯 Banners Ads</span>
+                      <button 
+                        onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("ads"))} 
+                        disabled={homepageSectionsOrder.indexOf("ads") === 0} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("ads"))} 
+                        disabled={homepageSectionsOrder.indexOf("ads") === homepageSectionsOrder.length - 1} 
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
                     </div>
-                    <span className="font-bold text-pink-400 uppercase mr-1 select-none">🎯 Banners Ads</span>
-                    <button 
-                      onClick={() => moveSectionUp(homepageSectionsOrder.indexOf("ads"))} 
-                      disabled={homepageSectionsOrder.indexOf("ads") === 0} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button 
-                      onClick={() => moveSectionDown(homepageSectionsOrder.indexOf("ads"))} 
-                      disabled={homepageSectionsOrder.indexOf("ads") === homepageSectionsOrder.length - 1} 
-                      className="p-1 rounded bg-zinc-900 border border-zinc-800 hover:border-pink-500/50 hover:text-white transition disabled:opacity-30"
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-                <RotatingBannerAds isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
-              </div>
+                  )}
+                  <RotatingBannerAds isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -5490,6 +5391,17 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* PARTNER BRANDS CONTINUOUS SLIDER BEFORE FOOTER - ON ALL PAGES EXCEPT PARCEIROS */}
+      {!(activeSection === "PARCEIROS" || selectedCategory === "PARCEIROS") && (
+        <section id="global-partner-brands-section" className={`w-full border-t ${isDarkMode ? "border-zinc-900 bg-stone-950/70" : "border-stone-200 bg-stone-50/90"}`}>
+          <PartnersCarousel 
+            isAdmin={isDirectEditingEnabled} 
+            isDarkMode={isDarkMode} 
+            defaultViewMode="slider"
+          />
+        </section>
+      )}
+
       {/* STATIC FOOTER (BRYAND AND LEGAL INFO) */}
       <footer className={`border-t ${isDarkMode ? "bg-black border-zinc-900 text-zinc-400" : "bg-stone-100 border-stone-200 text-stone-700"} py-12 px-4`}>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
@@ -5524,6 +5436,8 @@ export default function App() {
               <button onClick={() => { playClickSound(660, "sine"); setSelectedCategory("PODCAST"); setActiveSection("PODCAST"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left hover:text-red-400 transition-colors flex items-center gap-1.5"><Mic className="w-3.5 h-3.5" /> Podcast</button>
               <button onClick={() => { playClickSound(670, "sine"); setActiveSection("CONTATO"); setSelectedCategory(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left hover:text-yellow-400 transition-colors flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> Contato</button>
               
+              <button onClick={() => { playClickSound(635, "sine"); setActiveSection("QUERO FAZER PARTE"); setSelectedCategory(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left hover:text-pink-400 text-pink-400 font-bold transition-colors flex items-center gap-1.5"><Crown className="w-3.5 h-3.5" /> Quero Fazer Parte</button>
+              <button onClick={() => { playClickSound(640, "sine"); setActiveSection("ANUNCIE AQUI"); setSelectedCategory(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left hover:text-green-400 text-green-400 font-bold transition-colors flex items-center gap-1.5"><Megaphone className="w-3.5 h-3.5" /> Quero Anunciar</button>
               <button onClick={() => { playClickSound(600, "sine"); setActiveSection("QUEM SOMOS"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left hover:text-zinc-300 transition-colors text-[10px] opacity-70">Quem Somos</button>
               <button onClick={() => { playClickSound(600, "sine"); setActiveSection("OBJETIVOS"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-left hover:text-zinc-300 transition-colors text-[10px] opacity-70">Objetivos</button>
             </div>

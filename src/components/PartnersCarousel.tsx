@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Handshake, ExternalLink, ShieldCheck, ArrowRight, Sparkles, Plus, Edit, Trash2, X, Upload, Check } from "lucide-react";
+import { Handshake, ExternalLink, ShieldCheck, ArrowRight, Sparkles, Plus, Edit, Trash2, X, Upload, Check, Play, Pause, ChevronLeft, ChevronRight, LayoutGrid, SlidersHorizontal } from "lucide-react";
 import { playClickSound, playSuccessSound } from "../utils/audio";
 
 interface Partner {
@@ -69,7 +69,7 @@ const getThemeClasses = (theme: string) => {
       return {
         accentBorder: "border-blue-500/50 hover:border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]",
         shadowGlow: "hover:shadow-[0_0_25px_rgba(59,130,246,0.35)]",
-        badgeColor: "bg-blue-500/10 text-blue-500 border-blue-500/30"
+        badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30"
       };
     case "green":
       return {
@@ -81,7 +81,7 @@ const getThemeClasses = (theme: string) => {
       return {
         accentBorder: "border-amber-600/40 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.12)]",
         shadowGlow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.25)]",
-        badgeColor: "bg-amber-500/10 text-amber-500 border-amber-500/30"
+        badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30"
       };
     case "pink":
       return {
@@ -101,9 +101,21 @@ const getThemeClasses = (theme: string) => {
 
 interface PartnersCarouselProps {
   isAdmin?: boolean;
+  isDarkMode?: boolean;
+  defaultViewMode?: "slider" | "grid" | "parallax";
+  isContinuousSlider?: boolean;
+  title?: string;
+  subtitle?: string;
 }
 
-export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselProps) {
+export default function PartnersCarousel({ 
+  isAdmin = false,
+  isDarkMode = true,
+  defaultViewMode = "slider",
+  isContinuousSlider = false,
+  title,
+  subtitle
+}: PartnersCarouselProps) {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
@@ -119,25 +131,24 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
   
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "parallax">("grid");
+  const [viewMode, setViewMode] = useState<"slider" | "grid" | "parallax">(defaultViewMode || "slider");
+  const [isMarqueePaused, setIsMarqueePaused] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Sync / Load on mount
   useEffect(() => {
-    // 1. Load from localStorage or upgrade to new curated list
     let localPartners = DEFAULT_PARTNERS;
     const saved = localStorage.getItem("partners_list");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Check if parsed list has the new partner IDs
           const hasNewPartners = parsed.some((p: any) => p.id === "partner-aroma-sonhos" || p.id === "partner-braz-shopping" || p.id === "partner-mf-sabores");
           if (hasNewPartners) {
             localPartners = parsed;
           } else {
-            // Upgrade with new default curated list
             localPartners = DEFAULT_PARTNERS;
             localStorage.setItem("partners_list", JSON.stringify(DEFAULT_PARTNERS));
           }
@@ -160,7 +171,6 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
             setPartners(data.partners_list);
             localStorage.setItem("partners_list", JSON.stringify(data.partners_list));
           } else {
-            // Update server with the new partner brands
             savePartnersList(DEFAULT_PARTNERS);
           }
         } else {
@@ -181,6 +191,13 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
       window.removeEventListener("admin_open_partner_add", handleOpenPartnerAdd);
     };
   }, []);
+
+  // If defaultViewMode changes externally
+  useEffect(() => {
+    if (defaultViewMode) {
+      setViewMode(defaultViewMode);
+    }
+  }, [defaultViewMode]);
 
   // Save utility
   const savePartnersList = (newList: Partner[]) => {
@@ -319,63 +336,110 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
   };
 
   const handleDeletePartner = (id: string) => {
-    {
-      const newList = partners.filter(p => p.id !== id);
-      savePartnersList(newList);
-      setShowManageModal(false);
-      playClickSound(400, "sine");
+    const newList = partners.filter(p => p.id !== id);
+    savePartnersList(newList);
+    setShowManageModal(false);
+    playClickSound(400, "sine");
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -360, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 360, behavior: "smooth" });
     }
   };
 
   // Unique partners list without repetition
   const displayList = partners.length > 0 ? partners : DEFAULT_PARTNERS;
+  // Duplicate 3 times for continuous seamless marquee
+  const marqueeList = [...displayList, ...displayList, ...displayList];
 
   return (
-    <div id="partners-carousel-root" className="partners-carousel-root max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 select-none w-full">
+    <div id="partners-carousel-root" className="partners-carousel-root max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 select-none w-full">
       
       {/* SECTION HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-6 sm:mb-8 border-b border-zinc-800/80 font-display">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-6 border-b border-zinc-800/80 font-display">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-2 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400">
+          <div className="p-2 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 shrink-0">
             <Handshake className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="text-left min-w-0">
-            <h3 className="font-extrabold text-sm sm:text-base md:text-lg tracking-wider uppercase text-white flex flex-wrap items-center gap-2 leading-none">
-              Marcas Parceiras & Apoiadores Oficiais
+            <h3 className="font-extrabold text-sm sm:text-base md:text-lg tracking-wider uppercase text-white flex flex-wrap items-center gap-2 leading-tight">
+              {title || "Marcas Parceiras & Apoiadores Oficiais"}
               <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-[#22c55e]/15 text-[#22c55e] border border-[#22c55e]/30 px-2 py-0.5 rounded-full leading-none shrink-0">
                 ECOSSISTEMA REGIONAL
               </span>
             </h3>
-            <p className="text-[11px] sm:text-xs text-zinc-400 font-mono mt-1">
-              Empresas líderes e marcas inovadoras que apoiam, conectam e impulsionam Juiz de Fora e região
+            <p className="text-[11px] sm:text-xs text-zinc-400 font-mono mt-0.5">
+              {subtitle || "Empresas líderes e marcas inovadoras que apoiam, conectam e impulsionam Juiz de Fora e região"}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          {/* View Mode Toggle: Grid vs Parallax Slider */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* View Mode Selector */}
           <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
             <button
+              onClick={() => { playClickSound(600, "sine"); setViewMode("slider"); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 ${
+                viewMode === "slider"
+                  ? "bg-green-500 text-black shadow-md"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+              title="Slider passando automaticamente"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Slider Contínuo</span>
+            </button>
+            <button
               onClick={() => { playClickSound(600, "sine"); setViewMode("grid"); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 ${
                 viewMode === "grid"
                   ? "bg-green-500 text-black shadow-md"
                   : "text-zinc-400 hover:text-white"
               }`}
+              title="Visualizar em grade fixa"
             >
-              Grade Fixa
-            </button>
-            <button
-              onClick={() => { playClickSound(620, "sine"); setViewMode("parallax"); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition ${
-                viewMode === "parallax"
-                  ? "bg-green-500 text-black shadow-md"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              Slider Parallax
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Grade Fixa</span>
             </button>
           </div>
+
+          {/* Slider Play/Pause and Nudge Controls */}
+          {viewMode === "slider" && (
+            <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+              <button
+                onClick={() => setIsMarqueePaused(!isMarqueePaused)}
+                className={`p-1.5 rounded-lg text-xs transition ${
+                  isMarqueePaused 
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" 
+                    : "text-zinc-400 hover:text-white"
+                }`}
+                title={isMarqueePaused ? "Retomar movimento automático" : "Pausar slider"}
+              >
+                {isMarqueePaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                onClick={scrollLeft}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                title="Rolar para esquerda"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={scrollRight}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+                title="Rolar para direita"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {isAdmin && (
             <button
@@ -387,15 +451,115 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
               <span>+ Adicionar Parceiro</span>
             </button>
           )}
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-zinc-950/60 border border-zinc-800/80 px-3 py-1.5 rounded-xl">
+
+          <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-mono text-zinc-400 bg-zinc-950/60 border border-zinc-800/80 px-3 py-1.5 rounded-xl">
             <ShieldCheck className="w-4 h-4 text-[#22c55e]" />
             <span>PARCERIA CERTIFICADA</span>
           </div>
         </div>
       </div>
 
-      {/* RENDER VIEW: PARAX SLIDER OR FIXED GRID */}
-      {viewMode === "parallax" ? (
+      {/* RENDER VIEW: 1. CONTINUOUS AUTO-PASSING SLIDER (MARQUEE) */}
+      {viewMode === "slider" ? (
+        <div className="relative w-full overflow-hidden py-2 group">
+          {/* Gradient fade mask left and right */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-stone-950 to-transparent z-20 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-stone-950 to-transparent z-20 pointer-events-none" />
+
+          {/* Marquee Track passing smoothly */}
+          <div 
+            ref={scrollContainerRef}
+            className="w-full overflow-x-auto custom-scrollbar pb-2"
+          >
+            <div 
+              className={`flex gap-5 w-max ${
+                isMarqueePaused ? "" : "animate-marquee-slow"
+              } group-hover:[animation-play-state:paused]`}
+            >
+              {marqueeList.map((partner, idx) => {
+                const { accentBorder, shadowGlow, badgeColor } = getThemeClasses(partner.colorTheme);
+                const isBahamas = partner.id === "partner-bahamas";
+                return (
+                  <div
+                    key={`${partner.id}-${idx}`}
+                    className={`w-[290px] sm:w-[340px] flex flex-col justify-between p-5 bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border rounded-3xl transition-all duration-300 relative ${accentBorder} ${shadowGlow} group/card shrink-0 shadow-2xl hover:-translate-y-1.5`}
+                  >
+                    {/* Admin Overlay Indicator */}
+                    {isAdmin && (
+                      <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openEditModal(partner);
+                          }}
+                          className="p-1.5 rounded-lg bg-pink-950/90 border border-pink-500/50 text-pink-400 hover:text-white hover:bg-pink-900 transition text-[10px] font-mono font-bold flex items-center gap-1 shadow-md"
+                          title="Editar Informações do Parceiro"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                    )}
+
+                    <div>
+                      {/* Logo + Badge */}
+                      <div className="flex items-start justify-between gap-3 mb-3.5">
+                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 flex items-center justify-center p-2.5 shadow-inner group-hover/card:scale-105 transition-transform duration-300 shrink-0">
+                          <img
+                            src={partner.logoUrl}
+                            alt={partner.name}
+                            className="object-contain w-full h-full max-w-full max-h-full"
+                            referrerPolicy="no-referrer"
+                          />
+                          {isBahamas && (
+                            <div className="absolute top-1 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 font-mono font-black rounded uppercase tracking-wider shadow-[0_0_8px_rgba(220,38,38,0.8)] z-10 border border-red-400/40">
+                              MASTER
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 text-right">
+                          <span className={`inline-block text-[9px] sm:text-[10px] font-mono uppercase font-black px-2.5 py-1 rounded-lg leading-none tracking-wider border ${badgeColor}`}>
+                            {partner.badge}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Partner Details */}
+                      <div className="space-y-1.5 text-left mb-4">
+                        <h4 className="font-display font-black text-base sm:text-lg text-white uppercase tracking-tight leading-tight group-hover/card:text-green-400 transition-colors line-clamp-1">
+                          {partner.name}
+                        </h4>
+                        <p className="text-xs text-zinc-300 font-sans leading-relaxed line-clamp-2">
+                          {partner.slogan}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bottom CTA Button */}
+                    <div className="pt-3 border-t border-zinc-900/80 flex items-center justify-between gap-2 mt-auto">
+                      <a
+                        href={partner.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => handlePartnerClick(partner, e)}
+                        className="w-full py-2 px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-200 hover:text-white transition-all flex items-center justify-between text-xs font-mono font-bold group/btn"
+                      >
+                        <span className="flex items-center gap-1.5 text-[11px]">
+                          <Sparkles className="w-3.5 h-3.5 text-green-400" />
+                          <span>Conhecer Parceiro</span>
+                        </span>
+                        <ExternalLink className="w-3.5 h-3.5 text-zinc-400 group-hover/btn:text-green-400 group-hover/btn:translate-x-0.5 transition-all" />
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : viewMode === "parallax" ? (
         <div className="relative w-full overflow-x-auto pb-6 pt-2 custom-scrollbar">
           <div className="flex gap-6 w-max px-2">
             {displayList.map((partner) => {
@@ -568,7 +732,7 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
           <Sparkles className="w-3.5 h-3.5 text-green-400 shrink-0" />
           {isAdmin 
             ? "Modo administrativo ativo: clique em 'Editar' para alterar logo, slogan ou links dos parceiros." 
-            : "Apresentação oficial de marcas parceiras do Portal Do Começo ao Topo."}
+            : "Apresentação contínua de marcas parceiras oficiais do Portal Do Começo ao Topo."}
         </span>
         <span className="uppercase text-right opacity-80 font-bold text-zinc-400">
           Total de {displayList.length} Empresas Parceiras
@@ -601,141 +765,144 @@ export default function PartnersCarousel({ isAdmin = false }: PartnersCarouselPr
                   required
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Ex: Supermercados Bahamas"
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-pink-500 rounded-xl p-2.5 text-white focus:outline-none"
+                  placeholder="Ex: Bahamas Mix / Banco Regional"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-green-500"
                 />
               </div>
 
               {/* Slogan */}
               <div className="space-y-1">
-                <label className="text-zinc-400 font-bold block">Slogan / Descrição Curta *</label>
-                <textarea
-                  required
-                  rows={2}
-                  value={formSlogan}
-                  onChange={(e) => setFormSlogan(e.target.value)}
-                  placeholder="Ex: Economia e qualidade todos os dias perto de você."
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-pink-500 rounded-xl p-2.5 text-white focus:outline-none resize-none"
-                />
-              </div>
-
-              {/* Badge */}
-              <div className="space-y-1">
-                <label className="text-zinc-400 font-bold block">Selo / Categoria (Badge) *</label>
+                <label className="text-zinc-400 font-bold block">Slogan / Frase de Impacto *</label>
                 <input
                   type="text"
                   required
-                  value={formBadge}
-                  onChange={(e) => setFormBadge(e.target.value)}
-                  placeholder="Ex: Anunciante Master"
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-pink-500 rounded-xl p-2.5 text-white focus:outline-none"
+                  value={formSlogan}
+                  onChange={(e) => setFormSlogan(e.target.value)}
+                  placeholder="Ex: Economia e qualidade todos os dias"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-green-500"
                 />
+              </div>
+
+              {/* Badge Tag */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-zinc-400 font-bold block">Selo / Categoria</label>
+                  <input
+                    type="text"
+                    value={formBadge}
+                    onChange={(e) => setFormBadge(e.target.value)}
+                    placeholder="Ex: Anunciante Master"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-green-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-zinc-400 font-bold block">Tema Visual</label>
+                  <select
+                    value={formTheme}
+                    onChange={(e) => setFormTheme(e.target.value as any)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-green-500"
+                  >
+                    <option value="blue">Azul (Corporativo)</option>
+                    <option value="green">Verde (Tecnologia/Sustentabilidade)</option>
+                    <option value="amber">Âmbar (Negócios/Varejo)</option>
+                    <option value="pink">Rosa (Bem-Estar/Comunidade)</option>
+                    <option value="sky">Céu (Telecom/Conectividade)</option>
+                  </select>
+                </div>
               </div>
 
               {/* URL */}
               <div className="space-y-1">
-                <label className="text-zinc-400 font-bold block">Link de Destino (URL)</label>
+                <label className="text-zinc-400 font-bold block">Link de Destino / Site Oficial</label>
                 <input
                   type="url"
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
-                  placeholder="Ex: https://bahamas.com.br"
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-pink-500 rounded-xl p-2.5 text-white focus:outline-none"
+                  placeholder="https://suaempresa.com.br"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-green-500"
                 />
               </div>
 
-              {/* Color Theme & Styles */}
-              <div className="space-y-1">
-                <label className="text-zinc-400 font-bold block">Tema Cromático (Estilo)</label>
-                <select
-                  value={formTheme}
-                  onChange={(e) => setFormTheme(e.target.value as any)}
-                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-pink-500 rounded-xl p-2.5 text-white focus:outline-none"
-                >
-                  <option value="blue">Azul (Bahamas)</option>
-                  <option value="green">Verde (Indústria)</option>
-                  <option value="amber">Âmbar (Cultura)</option>
-                  <option value="pink">Rosa (Agronegócio)</option>
-                  <option value="sky">Céu (Tecnologia)</option>
-                </select>
-              </div>
-
-              {/* Logo Area */}
-              <div className="space-y-1.5">
-                <label className="text-zinc-400 font-bold block">Logotipo / Imagem Ilustrativa *</label>
-                
-                <div className="flex gap-4 items-center">
-                  <div className="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={formLogoUrl} alt="Logo preview" className="w-full h-full object-contain" />
-                  </div>
-
-                  <div className="flex-grow space-y-1">
-                    <input
-                      type="text"
-                      required
-                      value={formLogoUrl}
-                      onChange={(e) => setFormLogoUrl(e.target.value)}
-                      placeholder="URL ou carregue um arquivo"
-                      className="w-full bg-zinc-900 border border-zinc-800 focus:border-pink-500 rounded-xl p-2 text-white focus:outline-none text-[10px]"
-                    />
-                    
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 rounded-lg flex items-center gap-1.5 transition text-[10px]"
-                      >
-                        <Upload className="w-3 h-3 text-pink-500" />
-                        <span>{uploadingImage ? "Subindo..." : "Escolher arquivo"}</span>
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                      />
-                    </div>
-                  </div>
+              {/* Logo URL & Image Upload */}
+              <div className="space-y-2">
+                <label className="text-zinc-400 font-bold block">Logo do Parceiro (Imagem)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    required
+                    value={formLogoUrl}
+                    onChange={(e) => setFormLogoUrl(e.target.value)}
+                    placeholder="URL direta da logo (png, jpg, webp)"
+                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-green-500 text-[11px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl flex items-center gap-1.5 transition"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{uploadingImage ? "Enviando..." : "Subir Arquivo"}</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                 </div>
-                {uploadError && <p className="text-red-500 text-[10px]">{uploadError}</p>}
+                {uploadError && <p className="text-[10px] text-red-400">{uploadError}</p>}
+                
+                {/* Preview image */}
+                {formLogoUrl && (
+                  <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-400">Prévia do logotipo:</span>
+                    <img
+                      src={formLogoUrl}
+                      alt="Prévia"
+                      className="h-10 max-w-[120px] object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-between items-center pt-4 border-t border-zinc-900 mt-4">
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
                 {!isAddMode && editingPartner && (
                   <button
                     type="button"
                     onClick={() => handleDeletePartner(editingPartner.id)}
-                    className="px-3 py-2 bg-red-950/60 hover:bg-red-950 border border-red-500/20 text-red-450 hover:text-red-400 rounded-xl transition flex items-center gap-1"
+                    className="px-3 py-2 bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-300 rounded-xl flex items-center gap-1.5 transition text-[11px]"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remover Parceiro</span>
+                    <span>Excluir</span>
                   </button>
                 )}
-                <div className="flex gap-2 ml-auto">
+
+                <div className="flex items-center gap-2 ml-auto">
                   <button
                     type="button"
-                    onClick={() => { playClickSound(600, "sine"); setShowManageModal(false); }}
-                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 rounded-xl transition"
+                    onClick={() => setShowManageModal(false)}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-[11px] transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 text-black font-black uppercase rounded-xl hover:opacity-90 transition flex items-center gap-1 shadow-lg shadow-pink-500/10"
+                    className="px-5 py-2 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl text-[11px] transition flex items-center gap-1.5"
                   >
-                    <Check className="w-4 h-4" />
-                    <span>Salvar</span>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Salvar Parceiro</span>
                   </button>
                 </div>
               </div>
-
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

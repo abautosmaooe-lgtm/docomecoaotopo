@@ -1,10 +1,12 @@
 import { toast } from "sonner";
 import React, { useState, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { 
   Briefcase, MapPin, User, Search, Filter, Phone, Mail, Globe, 
   ExternalLink, Megaphone, Plus, Check, ShieldCheck, Tag, Info, Flame, ThumbsUp, Trash2, X, Camera, Gift,
   Eye, EyeOff, ChevronRight, Copy, Users, Pencil, Upload, Image as ImageIcon, PlusCircle, Save,
-  Activity, Terminal, Database, RefreshCw, Cake, Sparkles, Calendar
+  Activity, Terminal, Database, RefreshCw, Cake, Sparkles, Calendar,
+  LayoutGrid, Grid2X2, Grid3X3, Columns, Rows, ChevronDown, Compass, Award
 } from "lucide-react";
 import { playClickSound, playSuccessSound } from "../utils/audio";
 import { auth, db, googleProvider } from "../firebase";
@@ -18,7 +20,6 @@ import { COMMUNITY_MEMBERS_DATA, DEFAULT_MEMBER_AVATAR } from "../data/community
 import MembersGrid from "./MembersGrid";
 import ProfileCard from "./ui/profile-card";
 import { COMMUNITY_CATEGORIES } from "../lib/community-categories";
-import CommunityMembership from "./CommunityMembership";
 
 interface Member {
   id: string;
@@ -195,6 +196,20 @@ export default function ComunidadeDashboard({
   // Active view tabs within restricted Comunidade page
   const [activeTab, setActiveTab] = useState<"members" | "campaigns" | "gallery" | "rsvp">("members");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+
+  // Column view system (1, 2, 3, 4 colunas)
+  const [columnsCount, setColumnsCount] = useState<1 | 2 | 3 | 4>(() => {
+    try {
+      const saved = localStorage.getItem("comunidade_grid_columns");
+      if (saved && ["1", "2", "3", "4"].includes(saved)) {
+        return Number(saved) as 1 | 2 | 3 | 4;
+      }
+    } catch {}
+    return 2; // Default to 2 columns for large, prominent, ambassador-style cards
+  });
+
+  // Expanded card for accordion details (Ambassador model)
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   // User profile registration state (Atualize seu Cadastro)
   const [userCadastro, setUserCadastro] = useState(() => {
@@ -1233,22 +1248,7 @@ export default function ComunidadeDashboard({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in text-white" id="acesso-para-membros-section">
-      
-      {/* ACESSO PARA MEMBROS & PLANOS DA COMUNIDADE (QUERO FAZER PARTE) */}
-      <div className="bg-stone-950/80 border-2 border-pink-500/30 rounded-3xl p-4 sm:p-6 shadow-[0_4px_35px_rgba(236,72,153,0.1)] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-full bg-pink-500/5 blur-3xl pointer-events-none" />
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-900">
-          <div className="flex items-center gap-2.5">
-            <span className="text-[10px] bg-gradient-to-r from-pink-500 to-purple-500 text-black font-mono font-black uppercase tracking-widest px-3 py-1 rounded-full shadow">
-              👑 ACESSO PARA MEMBROS • QUERO FAZER PARTE
-            </span>
-          </div>
-          <span className="text-xs font-mono text-zinc-400">Planos & Matrícula Oficial</span>
-        </div>
-        <CommunityMembership isDarkMode={isDarkMode} isAdmin={isAdmin} />
-      </div>
-
+    <div className="space-y-6 animate-fade-in text-white" id="comunidade-section-root">
       {/* 30 DAYS TRIAL STATUS BANNER */}
       <div className="bg-gradient-to-r from-emerald-500/20 via-stone-900 to-teal-500/20 border-2 border-emerald-500/40 rounded-3xl p-5 relative overflow-hidden shadow-[0_4px_30px_rgba(16,185,129,0.12)]">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -1323,61 +1323,63 @@ export default function ComunidadeDashboard({
         </div>
       </div>
 
-      {/* CADASTRO STATUS BAR/WIDGET */}
-      <div className={`p-4 rounded-2xl border transition duration-300 flex flex-col md:flex-row items-center justify-between gap-4 ${
-        userCadastro.nome 
-          ? "bg-emerald-500/5 border-emerald-500/20" 
-          : "bg-amber-500/5 border-amber-500/20"
-      }`}>
-        <div className="flex items-center gap-3 w-full">
-          <div className={`p-2.5 rounded-xl shrink-0 ${
-            userCadastro.nome ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
-          }`}>
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div className="space-y-1 text-left">
-            <h4 className="font-display font-black text-xs uppercase tracking-wider text-white">
-              {userCadastro.nome ? "✓ Seu Cadastro de Membro VIP está Ativo e Atualizado" : "⚠️ Perfil Pendente de Informações Obrigatórias"}
-            </h4>
-            <p className="text-[11px] text-zinc-400 leading-relaxed font-mono">
-              {userCadastro.nome 
-                ? `Nome: ${userCadastro.nome} | CPF: ${userCadastro.cpf || "Pendente"} | WhatsApp: ${userCadastro.whatsapp || "Pendente"} | Atuação: ${userCadastro.areaAtuacao || "Pendente"}`
-                : "Seu cadastro precisa ser atualizado com Nome, Endereço Completo, WhatsApp, E-mail, CPF e Área de Atuação para credenciamento integral."}
-            </p>
-            {userCadastro.nome && userCadastro.endereco && (
-              <p className="text-[10px] text-zinc-500 leading-none font-mono">
-                Endereço comercial: <span className="text-zinc-400">{userCadastro.endereco}</span> | E-mail: <span className="text-zinc-400">{userCadastro.email}</span>
+      {/* CADASTRO STATUS BAR/WIDGET (Admin Only) */}
+      {isAdmin && (
+        <div className={`p-4 rounded-2xl border transition duration-300 flex flex-col md:flex-row items-center justify-between gap-4 ${
+          userCadastro.nome 
+            ? "bg-emerald-500/5 border-emerald-500/20" 
+            : "bg-amber-500/5 border-amber-500/20"
+        }`}>
+          <div className="flex items-center gap-3 w-full">
+            <div className={`p-2.5 rounded-xl shrink-0 ${
+              userCadastro.nome ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
+            }`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div className="space-y-1 text-left">
+              <h4 className="font-display font-black text-xs uppercase tracking-wider text-white">
+                {userCadastro.nome ? "✓ Seu Cadastro de Membro VIP está Ativo e Atualizado" : "⚠️ Perfil Pendente de Informações Obrigatórias"}
+              </h4>
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-mono">
+                {userCadastro.nome 
+                  ? `Nome: ${userCadastro.nome} | CPF: ${userCadastro.cpf || "Pendente"} | WhatsApp: ${userCadastro.whatsapp || "Pendente"} | Atuação: ${userCadastro.areaAtuacao || "Pendente"}`
+                  : "Seu cadastro precisa ser atualizado com Nome, Endereço Completo, WhatsApp, E-mail, CPF e Área de Atuação para credenciamento integral."}
               </p>
-            )}
+              {userCadastro.nome && userCadastro.endereco && (
+                <p className="text-[10px] text-zinc-500 leading-none font-mono">
+                  Endereço comercial: <span className="text-zinc-400">{userCadastro.endereco}</span> | E-mail: <span className="text-zinc-400">{userCadastro.email}</span>
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              onClick={handleCheckAuthStatus}
+              disabled={isCheckingAuth}
+              className="px-3.5 py-2 font-mono text-[11px] font-bold uppercase rounded-xl transition duration-200 bg-stone-900 border border-blue-500/40 hover:border-blue-400 text-blue-400 hover:text-white flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+              title="Executa diagnóstico de autenticação e exibe no console os dados do Firestore"
+            >
+              {isCheckingAuth ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+              ) : (
+                <Terminal className="w-3.5 h-3.5 text-blue-400" />
+              )}
+              <span>{isCheckingAuth ? "Verificando..." : "Verificar Status de Autenticação"}</span>
+            </button>
+
+            <button
+              onClick={() => { playClickSound(650, "sine"); openCadastroModal(); }}
+              className={`px-4 py-2 font-mono text-xs font-black uppercase rounded-xl transition shrink-0 duration-200 ${
+                userCadastro.nome
+                  ? "bg-zinc-900 border border-emerald-500/30 hover:border-emerald-500 text-emerald-400 hover:text-white"
+                  : "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
+              }`}
+            >
+              {userCadastro.nome ? "Atualizar Dados" : "Preencher Cadastro"}
+            </button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            onClick={handleCheckAuthStatus}
-            disabled={isCheckingAuth}
-            className="px-3.5 py-2 font-mono text-[11px] font-bold uppercase rounded-xl transition duration-200 bg-stone-900 border border-blue-500/40 hover:border-blue-400 text-blue-400 hover:text-white flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
-            title="Executa diagnóstico de autenticação e exibe no console os dados do Firestore"
-          >
-            {isCheckingAuth ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
-            ) : (
-              <Terminal className="w-3.5 h-3.5 text-blue-400" />
-            )}
-            <span>{isCheckingAuth ? "Verificando..." : "Verificar Status de Autenticação"}</span>
-          </button>
-
-          <button
-            onClick={() => { playClickSound(650, "sine"); openCadastroModal(); }}
-            className={`px-4 py-2 font-mono text-xs font-black uppercase rounded-xl transition shrink-0 duration-200 ${
-              userCadastro.nome
-                ? "bg-zinc-900 border border-emerald-500/30 hover:border-emerald-500 text-emerald-400 hover:text-white"
-                : "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)]"
-            }`}
-          >
-            {userCadastro.nome ? "Atualizar Dados" : "Preencher Cadastro"}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* DIAGNOSTIC MINI BANNER IF CHECKED */}
       {authDiagResult && (
@@ -2053,6 +2055,100 @@ export default function ComunidadeDashboard({
             </div>
           </div>
 
+          {/* COLUMN CONTROLS AND MEMBER LISTINGS HEADER */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-stone-950 border border-zinc-900 rounded-2xl">
+            <div className="flex items-center gap-2">
+              <span className="font-display font-black text-xs uppercase tracking-wider text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-emerald-400" />
+                <span>{filteredMembers.length} {filteredMembers.length === 1 ? "Membro Exibido" : "Membros Exibidos"}</span>
+              </span>
+              <span className="text-[10px] font-mono text-zinc-500 hidden md:inline">
+                • Escolha o modo de visualização:
+              </span>
+            </div>
+
+            {/* Column Switcher: 1, 2, 3, 4 Colunas */}
+            <div className="flex items-center gap-1 bg-black p-1 rounded-xl border border-zinc-850 self-stretch sm:self-auto justify-between sm:justify-start">
+              <span className="text-[9px] font-mono text-zinc-500 uppercase px-2 font-bold hidden sm:inline">Colunas:</span>
+
+              {/* 1 Coluna */}
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound(600, "sine");
+                  setColumnsCount(1);
+                  localStorage.setItem("comunidade_grid_columns", "1");
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${
+                  columnsCount === 1
+                    ? "bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-md shadow-pink-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+                title="1 Coluna — Destaque Individual Máximo"
+              >
+                <Rows className="w-3.5 h-3.5" />
+                <span>1 Coluna</span>
+              </button>
+
+              {/* 2 Colunas */}
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound(600, "sine");
+                  setColumnsCount(2);
+                  localStorage.setItem("comunidade_grid_columns", "2");
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${
+                  columnsCount === 2
+                    ? "bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-md shadow-pink-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+                title="2 Colunas — Modelo Embaixadores (Destaque Duplo)"
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span>2 Colunas</span>
+              </button>
+
+              {/* 3 Colunas */}
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound(600, "sine");
+                  setColumnsCount(3);
+                  localStorage.setItem("comunidade_grid_columns", "3");
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${
+                  columnsCount === 3
+                    ? "bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-md shadow-pink-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+                title="3 Colunas — Grade Ampla Equilibrada"
+              >
+                <Grid3X3 className="w-3.5 h-3.5" />
+                <span>3 Colunas</span>
+              </button>
+
+              {/* 4 Colunas */}
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound(600, "sine");
+                  setColumnsCount(4);
+                  localStorage.setItem("comunidade_grid_columns", "4");
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${
+                  columnsCount === 4
+                    ? "bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-md shadow-pink-500/20"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+                title="4 Colunas — Grade Compacta"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>4 Colunas</span>
+              </button>
+            </div>
+          </div>
+
           {/* MEMBER CARDS LISTINGS */}
           {filteredMembers.length === 0 ? (
             <div className="p-12 text-center rounded-3xl bg-stone-950 border border-dashed border-zinc-900 space-y-3">
@@ -2076,175 +2172,272 @@ export default function ComunidadeDashboard({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className={
+              columnsCount === 1
+                ? "grid grid-cols-1 max-w-4xl mx-auto gap-6"
+                : columnsCount === 2
+                ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+                : columnsCount === 3
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+                : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+            }>
               {filteredMembers.map((m) => {
                 const bdayInfo = getMemberBirthdayInfo(m.birthday);
                 const currentCalMonth = new Date().getMonth() + 1;
                 const isBirthdayThisMonth = bdayInfo.month === currentCalMonth;
 
                 return (
-                <div
-                  key={m.id}
-                  onClick={() => {
-                    playClickSound(500, "sine");
-                    setSelectedMember(m);
-                  }}
-                  className={`p-4 rounded-2xl bg-stone-950 border transition-all cursor-pointer flex flex-col justify-between gap-3 relative group ${
-                    isBirthdayThisMonth
-                      ? "border-pink-500/60 shadow-[0_0_20px_rgba(236,72,153,0.18)] hover:border-pink-400 hover:shadow-[0_0_28px_rgba(236,72,153,0.3)]"
-                      : "border-zinc-900 hover:border-pink-500/40 hover:shadow-[0_0_20px_rgba(236,72,153,0.15)]"
-                  }`}
-                >
-                  {/* Top badges and admin actions */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded bg-zinc-900 text-zinc-300 border border-zinc-800">
-                        📍 {m.city || "Juiz de Fora"}
-                      </span>
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    whileHover={{ y: -4, scale: 1.015 }}
+                    transition={{ 
+                      opacity: { duration: 0.35, ease: "easeOut" },
+                      y: { type: "spring", stiffness: 300, damping: 20 },
+                      scale: { type: "spring", stiffness: 300, damping: 20 }
+                    }}
+                    className={`group bg-stone-950 hover:bg-stone-900/40 border rounded-3xl p-5 flex flex-col justify-between shadow-xl text-left transition-all duration-300 relative ${
+                      isBirthdayThisMonth
+                        ? "border-pink-500/60 shadow-[0_0_24px_rgba(236,72,153,0.18)] hover:border-pink-400 hover:shadow-[0_0_32px_rgba(236,72,153,0.28)]"
+                        : "border-zinc-900 hover:border-pink-500/30 hover:shadow-[0_0_24px_rgba(236,72,153,0.08)]"
+                    } ${columnsCount === 1 ? "md:p-7" : ""}`}
+                  >
+                    <div className="space-y-4">
+                      {/* Visual rendering of profile image with upload capability (Ambassador Card Model) */}
+                      <div className={`relative w-full ${
+                        columnsCount === 1 
+                          ? "aspect-[16/9] sm:aspect-[21/9]" 
+                          : "aspect-[4/3] sm:aspect-[16/10]"
+                      } rounded-2xl bg-zinc-900/40 border border-dashed border-zinc-800 flex items-center justify-center overflow-hidden group-hover:border-pink-500/25 transition-all duration-300 shadow-inner`}>
+                        <PositionableImage
+                          src={m.photo || DEFAULT_MEMBER_AVATAR}
+                          alt={m.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 z-10"
+                          storageKey={`comunidade-member-card-${m.id}`}
+                          editable={isAdmin}
+                          referrerPolicy="no-referrer"
+                          fallback={
+                            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-2.5 z-0 bg-zinc-950">
+                              <div className="absolute inset-0 bg-gradient-to-tr from-pink-500/5 via-transparent to-red-500/5 opacity-40 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                              <div className="w-12 h-12 rounded-full bg-black/60 border border-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-pink-400 group-hover:border-pink-500/30 group-hover:scale-105 transition-all duration-300 z-10 pointer-events-none">
+                                <Upload className="w-5 h-5 text-zinc-500 group-hover:text-pink-400" />
+                              </div>
+                              <div className="text-center space-y-0.5 relative z-10 px-2 pointer-events-none">
+                                <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest block font-bold group-hover:text-zinc-200 transition-colors">
+                                  FOTO EM BREVE 📸
+                                </span>
+                                <span className="text-[8px] font-mono text-zinc-600 block uppercase">
+                                  Espaço reservado
+                                </span>
+                              </div>
+                            </div>
+                          }
+                        />
+                        
+                        {/* Gradient Shadow Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent z-10 pointer-events-none" />
 
-                      {/* Birthday badge if birthday in current calendar month */}
-                      {isBirthdayThisMonth && (
-                        <span className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono font-black rounded-md bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm animate-pulse" title={`Aniversariante do Mês! Dia ${bdayInfo.day}`}>
-                          <Cake className="w-3 h-3" />
-                          <span>ANIVERSARIANTE</span>
-                        </span>
+                        {/* Top Badges & Admin Controls Over Image */}
+                        <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-2 pointer-events-none">
+                          <div className="flex items-center gap-1.5 flex-wrap pointer-events-auto">
+                            <span className="px-2.5 py-1 text-[9px] font-mono font-bold uppercase rounded-lg bg-black/80 backdrop-blur-md text-zinc-200 border border-white/10 shadow-lg">
+                              📍 {m.city || "Juiz de Fora"}
+                            </span>
+
+                            {isBirthdayThisMonth && (
+                              <span className="flex items-center gap-1 px-2.5 py-1 text-[9px] font-mono font-black rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg animate-pulse" title={`Aniversariante do Mês! Dia ${bdayInfo.day}`}>
+                                <Cake className="w-3 h-3" />
+                                <span>ANIVERSARIANTE</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pointer-events-auto">
+                            {m.isVerified && (
+                              <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-300 bg-emerald-950/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-emerald-500/40 shadow-lg">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> VIP
+                              </span>
+                            )}
+
+                            {isAdmin && (
+                              <div className="flex items-center gap-1 bg-black/85 backdrop-blur-md p-1 rounded-lg border border-zinc-800">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleOpenEditMember(m, e); }}
+                                  className="p-1 rounded bg-green-950/70 hover:bg-green-800 text-green-400 hover:text-white transition"
+                                  title="Editar textos e fotos do membro (Admin)"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteMember(m.id, e); }}
+                                  className="p-1 rounded bg-red-950/70 hover:bg-red-800 text-red-400 hover:text-white transition"
+                                  title="Excluir membro (Admin)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bottom Tag on Image */}
+                        <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
+                          <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md bg-emerald-950/90 text-emerald-300 border border-emerald-500/30 backdrop-blur-sm">
+                            ✨ {m.branch}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Header info */}
+                      <div className="space-y-1">
+                        <h4 className="font-display font-black text-base sm:text-lg uppercase leading-tight tracking-tight text-white group-hover:text-pink-400 transition-colors duration-250">
+                          {m.name}
+                        </h4>
+                        <p className="text-zinc-300 text-xs sm:text-sm font-semibold leading-relaxed flex items-center gap-1.5 pt-0.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{m.companyName || m.role}</span>
+                        </p>
+                      </div>
+
+                      {/* Bio snippet */}
+                      {m.bio && (
+                        <p className="text-zinc-400 text-xs leading-relaxed line-clamp-2">
+                          {m.bio}
+                        </p>
                       )}
-                    </div>
 
-                    <div className="flex items-center gap-1.5">
-                      {m.isVerified && (
-                        <span className="flex items-center gap-1 text-[9px] font-mono font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20">
-                          <ShieldCheck className="w-3 h-3 text-green-400" /> VIP
-                        </span>
-                      )}
+                      {/* Collapsible Details Panel (Ambassador Model) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playClickSound(600, "sine");
+                          setExpandedCardId(expandedCardId === m.id ? null : m.id);
+                        }}
+                        className="w-full mt-2 px-3 py-2 bg-zinc-900/90 hover:bg-zinc-850 hover:text-pink-400 text-zinc-400 text-[10px] font-mono uppercase tracking-widest rounded-xl flex items-center justify-center gap-1.5 transition-all border border-zinc-800/80"
+                      >
+                        <span>{expandedCardId === m.id ? "Ocultar Informações" : "Ver Perfil & Atuação"}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-250 ${expandedCardId === m.id ? "rotate-180 text-pink-400" : ""}`} />
+                      </button>
 
-                      {isAdmin && (
-                        <>
-                          <button
-                            onClick={(e) => handleOpenEditMember(m, e)}
-                            className="p-1 rounded bg-green-950/60 hover:bg-green-800/80 text-green-400 hover:text-white transition border border-green-500/30"
-                            title="Editar textos e fotos do membro (Admin)"
+                      <AnimatePresence>
+                        {expandedCardId === m.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-3 pt-3 border-t border-zinc-900 space-y-3 text-xs text-zinc-300 font-sans overflow-hidden"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteMember(m.id, e)}
-                            className="p-1 rounded bg-red-950/50 hover:bg-red-900/80 text-red-400 hover:text-white transition border border-red-500/30"
-                            title="Excluir membro (Admin)"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      )}
+                            {/* Nome Completo */}
+                            <div>
+                              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                <User className="w-3 h-3 text-pink-500" /> Nome Completo
+                              </span>
+                              <p className="font-semibold text-white mt-0.5">{m.name}</p>
+                            </div>
+
+                            {/* Cargo e Empresa */}
+                            <div>
+                              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                <ShieldCheck className="w-3 h-3 text-emerald-400" /> Cargo & Ramo de Atuação
+                              </span>
+                              <p className="text-zinc-200 mt-0.5 font-medium">{m.role} • {m.branch}</p>
+                              {m.companyName && (
+                                <p className="text-zinc-400 text-[11px] font-mono">{m.companyName}</p>
+                              )}
+                            </div>
+
+                            {/* Bio completa / Descrição */}
+                            {m.bio && (
+                              <div>
+                                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                  <Compass className="w-3 h-3 text-pink-400" /> Atividades & Especialidades
+                                </span>
+                                <p className="text-zinc-350 text-[11px] leading-relaxed mt-0.5 whitespace-pre-line">{m.bio}</p>
+                              </div>
+                            )}
+
+                            {/* Endereço / Localização */}
+                            {m.address && (
+                              <div>
+                                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-blue-400" /> Localização & Endereço
+                                </span>
+                                <p className="text-zinc-350 text-[11px] mt-0.5">{m.address}</p>
+                              </div>
+                            )}
+
+                            {/* Aniversário */}
+                            {m.birthday && (
+                              <div>
+                                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                  <Cake className="w-3 h-3 text-pink-400" /> Aniversário
+                                </span>
+                                <p className="text-pink-300 font-mono text-[11px] mt-0.5">
+                                  {getMemberBirthdayInfo(m.birthday).formatted || m.birthday}
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  </div>
 
-                  {/* Member Avatar & Basic Info */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shrink-0 relative">
-                      <PositionableImage
-                        src={m.photo || DEFAULT_MEMBER_AVATAR}
-                        alt={m.name}
-                        className="w-full h-full object-cover"
-                        storageKey={`comunidade-member-card-${m.id}`}
-                        editable={isAdmin}
-                      />
+                    {/* Direct Contact Buttons (WhatsApp & Instagram) and Full Modal Trigger */}
+                    <div className="pt-4 border-t border-zinc-900/90 mt-4 space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        {/* WhatsApp Button */}
+                        <a
+                          href={
+                            m.whatsappLink || 
+                            (m.contact ? `https://wa.me/${m.contact.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${m.name}! Vi seu perfil na Comunidade Do Começo ao Topo.`)}` : `https://wa.me/5532984124860?text=${encodeURIComponent(`Olá! Gostaria de conversar com ${m.name} da Comunidade Do Começo ao Topo.`)}`)
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 rounded-xl text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition shadow-sm"
+                          title="Conversar no WhatsApp"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>WhatsApp</span>
+                        </a>
+
+                        {/* Instagram Button */}
+                        <a
+                          href={
+                            m.instagramLink || 
+                            (m.instagram ? `https://instagram.com/${m.instagram.replace(/[@\s]/g, '')}` : "https://instagram.com/docomecoaotopo")
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-pink-500/10 hover:bg-pink-500/25 border border-pink-500/30 hover:border-pink-500/60 rounded-xl text-[11px] font-mono font-bold text-pink-400 hover:text-pink-300 transition shadow-sm"
+                          title="Visitar Instagram"
+                        >
+                          <Globe className="w-3.5 h-3.5 text-pink-400" />
+                          <span>Instagram</span>
+                        </a>
+                      </div>
+
+                      {/* View Full Modal Trigger */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playClickSound(500, "sine");
+                          setSelectedMember(m);
+                        }}
+                        className="w-full py-2 px-3.5 bg-stone-900/60 hover:bg-stone-850 border border-zinc-800/80 hover:border-zinc-700 rounded-xl flex items-center justify-between text-[11px] text-zinc-400 hover:text-zinc-200 font-mono transition"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-pink-400" /> Ver Perfil Completo
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-pink-400 group-hover:translate-x-0.5 transition-all" />
+                      </button>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-sm text-white truncate group-hover:text-pink-400 transition">
-                        {m.name}
-                      </h4>
-                      <p className="text-[11px] text-zinc-400 font-mono truncate">
-                        {m.companyName || m.role}
-                      </p>
-                      <p className="text-[10px] text-green-400 font-mono truncate font-semibold">
-                        {m.branch}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bio snippet */}
-                  {m.bio && (
-                    <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">
-                      {m.bio}
-                    </p>
-                  )}
-
-                  {/* Direct Contact Buttons (WhatsApp & Instagram) */}
-                  <div className="flex items-center gap-2 pt-1">
-                    {m.whatsappLink ? (
-                      <a
-                        href={m.whatsappLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 rounded-lg text-[10px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition"
-                        title="Conversar no WhatsApp"
-                      >
-                        <Phone className="w-3 h-3 text-emerald-400" />
-                        WhatsApp
-                      </a>
-                    ) : m.contact ? (
-                      <a
-                        href={`https://wa.me/${m.contact.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 rounded-lg text-[10px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition"
-                        title="Conversar no WhatsApp"
-                      >
-                        <Phone className="w-3 h-3 text-emerald-400" />
-                        WhatsApp
-                      </a>
-                    ) : (
-                      <a
-                        href={`https://wa.me/5532984124860?text=${encodeURIComponent(`Olá! Gostaria de conversar com ${m.name} da Comunidade Do Começo ao Topo.`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 hover:border-emerald-500/60 rounded-lg text-[10px] font-mono font-bold text-emerald-400 hover:text-emerald-300 transition"
-                        title="Conversar no WhatsApp"
-                      >
-                        <Phone className="w-3 h-3 text-emerald-400" />
-                        WhatsApp
-                      </a>
-                    )}
-
-                    {m.instagramLink ? (
-                      <a
-                        href={m.instagramLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-pink-500/10 hover:bg-pink-500/25 border border-pink-500/30 hover:border-pink-500/60 rounded-lg text-[10px] font-mono font-bold text-pink-400 hover:text-pink-300 transition"
-                        title="Visitar Instagram"
-                      >
-                        <Globe className="w-3 h-3 text-pink-400" />
-                        Instagram
-                      </a>
-                    ) : (
-                      <a
-                        href="https://instagram.com/docomecoaotopo"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { e.stopPropagation(); playClickSound(700, "sine"); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-pink-500/10 hover:bg-pink-500/25 border border-pink-500/30 hover:border-pink-500/60 rounded-lg text-[10px] font-mono font-bold text-pink-400 hover:text-pink-300 transition"
-                        title="Visitar Instagram"
-                      >
-                        <Globe className="w-3 h-3 text-pink-400" />
-                        Instagram
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Card Footer CTA */}
-                  <div className="pt-2 border-t border-zinc-900/80 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-                    <span className="group-hover:text-zinc-300 transition flex items-center gap-1">
-                      <User className="w-3 h-3" /> Ver Perfil Completo
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-zinc-600 group-hover:text-pink-400 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -3359,11 +3552,6 @@ export default function ComunidadeDashboard({
           </div>
         </div>
       )}
-
-      {/* QUERO FAZER PARTE DA COMUNIDADE - MODALIDADE DOS PLANOS */}
-      <div id="quero-fazer-parte-section" className="pt-10 border-t border-zinc-850">
-        <CommunityMembership isDarkMode={isDarkMode} isAdmin={isAdmin} />
-      </div>
 
     </div>
   );

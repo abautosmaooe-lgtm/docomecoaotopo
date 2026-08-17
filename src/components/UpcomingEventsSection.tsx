@@ -23,14 +23,16 @@ export default function UpcomingEventsSection({
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   // Speaker photo state with local storage persistence
+  const DEFAULT_SPEAKER_PHOTO = "https://i.ibb.co/XxdCnNqy/embaixadora-fl-via.jpg";
+
   const [speakerPhoto, setSpeakerPhoto] = useState<string>(() => {
     try {
       const stored = localStorage.getItem("app_upcoming_event_speaker_photo");
-      if (stored && !stored.startsWith("data:image/")) {
+      if (stored && !stored.startsWith("data:image/") && !stored.includes("unsplash.com")) {
         return stored;
       }
     } catch (e) {}
-    return "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
+    return DEFAULT_SPEAKER_PHOTO;
   });
 
   // Modal editing state
@@ -40,6 +42,7 @@ export default function UpcomingEventsSection({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleOpenEdit = () => {
+    if (!directEditingMode) return;
     playClickSound(700, "sine");
     setTempUrl(speakerPhoto);
     setIsEditingPhoto(true);
@@ -88,8 +91,7 @@ export default function UpcomingEventsSection({
   };
 
   const handleResetPhoto = () => {
-    const defaultUrl = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
-    setSpeakerPhoto(defaultUrl);
+    setSpeakerPhoto(DEFAULT_SPEAKER_PHOTO);
     try { localStorage.removeItem("app_upcoming_event_speaker_photo"); } catch (e) {}
     toast.info("Foto da palestrante restaurada para o padrão.");
     setIsEditingPhoto(false);
@@ -233,7 +235,10 @@ export default function UpcomingEventsSection({
             
             {/* Speaker Presentation */}
             <div className="space-y-4 text-center">
-              <div className="inline-block relative group/speaker cursor-pointer" onClick={handleOpenEdit}>
+              <div 
+                className={`inline-block relative group/speaker ${directEditingMode ? "cursor-pointer" : ""}`} 
+                onClick={directEditingMode ? handleOpenEdit : undefined}
+              >
                 <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl p-1 bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-xl mx-auto overflow-hidden bg-zinc-950">
                   <img
                     src={speakerPhoto}
@@ -241,7 +246,7 @@ export default function UpcomingEventsSection({
                     className="w-full h-full object-cover object-top rounded-xl"
                     referrerPolicy="no-referrer"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80";
+                      (e.target as HTMLImageElement).src = DEFAULT_SPEAKER_PHOTO;
                     }}
                   />
                 </div>
@@ -249,13 +254,15 @@ export default function UpcomingEventsSection({
                   ⭐ Palestrante
                 </span>
 
-                {/* Hover overlay to change speaker image */}
-                <div className="absolute inset-0 bg-black/70 rounded-2xl flex flex-col items-center justify-center gap-1 text-white opacity-0 group-hover/speaker:opacity-100 transition-opacity duration-200 border border-amber-400">
-                  <Camera className="w-5 h-5 text-amber-300" />
-                  <span className="text-[9px] font-mono font-bold uppercase tracking-wider">
-                    Trocar Foto
-                  </span>
-                </div>
+                {/* Hover overlay to change speaker image (Admin Only) */}
+                {directEditingMode && (
+                  <div className="absolute inset-0 bg-black/70 rounded-2xl flex flex-col items-center justify-center gap-1 text-white opacity-0 group-hover/speaker:opacity-100 transition-opacity duration-200 border border-amber-400 cursor-pointer">
+                    <Camera className="w-5 h-5 text-amber-300" />
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider">
+                      Trocar Foto
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -269,12 +276,14 @@ export default function UpcomingEventsSection({
                   Referência em assessoria tributária, planejamento fiscal e estruturação tributária para empresas e empreendedores.
                 </p>
                 
-                <button
-                  onClick={handleOpenEdit}
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-mono font-bold text-amber-400 hover:text-amber-300 underline"
-                >
-                  <Camera className="w-3.5 h-3.5" /> Alterar foto da Flávia Reis
-                </button>
+                {directEditingMode && (
+                  <button
+                    onClick={handleOpenEdit}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-mono font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                  >
+                    <Camera className="w-3.5 h-3.5" /> Alterar foto da Flávia Reis
+                  </button>
+                )}
               </div>
             </div>
 

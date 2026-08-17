@@ -55,7 +55,9 @@ import {
   Sparkle,
   Wifi,
   WifiOff,
-  HardDrive
+  HardDrive,
+  Edit3,
+  Filter
 } from "lucide-react";
 import { NewsArticle, CategoryType } from "../types";
 import { playClickSound, playSuccessSound, playNegativeSound } from "../utils/audio";
@@ -150,7 +152,8 @@ export default function CmsDashboard({
 
   const articleFileInputRef = useRef<HTMLInputElement>(null);
 
-  // CMS state for new raw post
+  // CMS state for new raw post / edit existing post
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
@@ -163,6 +166,8 @@ export default function CmsDashboard({
   const [author, setAuthor] = useState("Anderson Maooe");
   const [tags, setTags] = useState("Negócios, Regional, Inovação");
   const [successMsg, setSuccessMsg] = useState("");
+  const [searchPostsQuery, setSearchPostsQuery] = useState("");
+  const [categoryFilterPosts, setCategoryFilterPosts] = useState<string>("TODAS");
 
   // Local state mirroring logo and details
   const [logoText1, setLogoText1] = useState(logoConfig.customText1);
@@ -539,39 +544,77 @@ export default function CmsDashboard({
     }
 
     const tagList = tags.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+    const existingArt = editingArticleId ? articles.find((a) => a.id === editingArticleId) : null;
 
     const newArt: NewsArticle = {
-      id: `art-${Date.now()}`,
+      id: editingArticleId || `art-${Date.now()}`,
       title,
       excerpt,
       content,
       category,
       author,
-      date: new Date().toISOString(),
+      date: existingArt ? existingArt.date : new Date().toISOString(),
       readTime: `${Math.max(2, Math.round(content.length / 450))} min`,
       imageUrl: image,
-      views: Math.floor(Math.random() * 40) + 12,
-      shares: 0,
-      likes: 0,
+      views: existingArt ? existingArt.views : Math.floor(Math.random() * 40) + 12,
+      shares: existingArt ? existingArt.shares : 0,
+      likes: existingArt ? existingArt.likes : 0,
       isPremium,
       location,
       tags: tagList,
-      commentsCount: 0,
+      commentsCount: existingArt ? existingArt.commentsCount : 0,
+      customImageHeight: existingArt?.customImageHeight,
+      customWidthSpan: existingArt?.customWidthSpan,
+      customPadding: existingArt?.customPadding,
+      customBorderRadius: existingArt?.customBorderRadius,
+      customGlowColor: existingArt?.customGlowColor,
+      customAspectRatio: existingArt?.customAspectRatio,
+      linkUrl: existingArt?.linkUrl,
     };
 
     onAddArticle(newArt);
     playSuccessSound();
 
+    const isEdit = !!editingArticleId;
+
     // Reset Fields
+    setEditingArticleId(null);
     setTitle("");
     setExcerpt("");
     setContent("");
-    const msg = category === "EVENTOS" 
-      ? "Evento cadastrado e salvo com sucesso! Acesse a aba EVENTOS no portal para visualizá-lo."
-      : "Publicado em destaque no banco WP-Admin regional!";
+    const msg = isEdit
+      ? "Matéria / Notícia atualizada e salva com sucesso!"
+      : category === "EVENTOS" 
+        ? "Evento cadastrado e salvo com sucesso! Acesse a aba EVENTOS no portal para visualizá-lo."
+        : "Publicado em destaque no banco WP-Admin regional!";
     setSuccessMsg(msg);
     toast.success(msg);
     setTimeout(() => setSuccessMsg(""), 5000);
+  };
+
+  const handleStartEditArticle = (art: NewsArticle) => {
+    setEditingArticleId(art.id);
+    setTitle(art.title);
+    setExcerpt(art.excerpt);
+    setContent(art.content || "");
+    setCategory(art.category as CategoryType);
+    setImage(art.imageUrl);
+    setIsPremium(!!art.isPremium);
+    setLocation(art.location || "Juiz de Fora, MG");
+    setAuthor(art.author || "Redação");
+    setTags((art.tags || []).join(", "));
+    setActiveAdminTab("new_post");
+    playClickSound(700, "sine");
+    toast.info(`Editando notícia: "${art.title}"`);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingArticleId(null);
+    setTitle("");
+    setExcerpt("");
+    setContent("");
+    setSuccessMsg("");
+    toast.info("Edição cancelada.");
   };
 
   const handleApplyAppearance = () => {
@@ -916,7 +959,7 @@ export default function CmsDashboard({
                   <span>Real-Time Cliques por Matéria (Top 7)</span>
                 </h4>
                 <div className="h-56 min-h-[224px] w-full min-w-0 text-[10px] font-mono">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                  <ResponsiveContainer width="100%" height={224} minWidth={10} minHeight={200} debounce={50}>
                     <BarChart data={barChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#1c1c1e" />
                       <XAxis dataKey="name" stroke="#737373" />
@@ -934,7 +977,7 @@ export default function CmsDashboard({
                   <span>Crescimento de Cliques e Newsletter</span>
                 </h4>
                 <div className="h-56 min-h-[224px] w-full min-w-0 text-[10px] font-mono">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                  <ResponsiveContainer width="100%" height={224} minWidth={10} minHeight={200} debounce={50}>
                     <AreaChart data={lineHistoryData}>
                       <defs>
                         <linearGradient id="colorAssin" x1="0" y1="0" x2="0" y2="1">
@@ -978,18 +1021,54 @@ export default function CmsDashboard({
           </div>
         )}
 
-        {/* TAB 2: WRITE NEW BLOG POST FORM */}
+        {/* TAB 2: WRITE NEW BLOG POST FORM / EDIT POST */}
         {activeAdminTab === "new_post" && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-zinc-900">
-              <PlusCircle className="w-5 h-5 text-[#22c55e]" />
-              <div>
-                <h3 className="font-display font-black text-sm uppercase text-white tracking-widest">
-                  Escrever Nova Matéria Regional
-                </h3>
-                <span className="text-[10px] text-zinc-500 font-mono block">Crie novos tópicos e salve diretamente no feed regional</span>
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
+              <div className="flex items-center gap-2">
+                {editingArticleId ? (
+                  <Edit3 className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <PlusCircle className="w-5 h-5 text-[#22c55e]" />
+                )}
+                <div>
+                  <h3 className="font-display font-black text-sm uppercase text-white tracking-widest">
+                    {editingArticleId ? "Editar Matéria / Notícia Regional" : "Escrever Nova Matéria Regional"}
+                  </h3>
+                  <span className="text-[10px] text-zinc-500 font-mono block">
+                    {editingArticleId
+                      ? `Editando item ID: ${editingArticleId} - As alterações refletem no feed imediatamente`
+                      : "Crie novos tópicos e salve diretamente no feed regional"}
+                  </span>
+                </div>
               </div>
+              {editingArticleId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-[10px] font-mono border border-zinc-800 transition flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" />
+                  Cancelar Edição
+                </button>
+              )}
             </div>
+
+            {editingArticleId && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-300 flex items-center justify-between">
+                <span className="font-semibold flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  Você está alterando uma matéria existente. Ao salvar, os dados serão atualizados em todo o portal.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-[10px] underline hover:text-white font-mono shrink-0 ml-2"
+                >
+                  Descartar
+                </button>
+              </div>
+            )}
 
             {successMsg && (
               <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400 font-bold flex items-center gap-2">
@@ -1199,12 +1278,27 @@ export default function CmsDashboard({
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 bg-gradient-to-r from-green-400 to-pink-500 text-black font-display font-black tracking-widest uppercase text-xs rounded-xl hover:opacity-90 active:scale-98 transition duration-200"
-              >
-                Salvar e Publicar no Portal (Estilo WordPress)
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  className={`flex-1 py-3 font-display font-black tracking-widest uppercase text-xs rounded-xl hover:opacity-90 active:scale-98 transition duration-200 ${
+                    editingArticleId
+                      ? "bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-lg shadow-amber-500/20"
+                      : "bg-gradient-to-r from-green-400 to-pink-500 text-black shadow-lg shadow-green-500/20"
+                  }`}
+                >
+                  {editingArticleId ? "💾 Salvar Alterações da Matéria" : "Salvar e Publicar no Portal (Estilo WordPress)"}
+                </button>
+                {editingArticleId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-5 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-300 font-mono font-bold text-xs border border-zinc-800 transition"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         )}
@@ -1212,68 +1306,176 @@ export default function CmsDashboard({
         {/* TAB 3: MANAGE POSTS LIST */}
         {activeAdminTab === "manage_posts" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-900">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-pink-400" />
                 <div>
                   <h3 className="font-display font-black text-sm uppercase text-white tracking-widest">
                     Gerenciar Matérias Cadastradas
                   </h3>
-                  <span className="text-[10px] text-zinc-500 font-mono block">Apague notícias ou acompanhe a visualização de cliques local</span>
+                  <span className="text-[10px] text-zinc-500 font-mono block">Edite, apague notícias ou acompanhe a visualização de cliques</span>
                 </div>
               </div>
-              <span className="text-[11px] font-mono text-zinc-400">Total: {articles.length} posts</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-800">
+                  Total: {articles.length} posts
+                </span>
+                <button
+                  onClick={() => {
+                    handleCancelEdit();
+                    setActiveAdminTab("new_post");
+                  }}
+                  className="px-3 py-1 bg-green-500 hover:bg-green-400 text-black font-bold text-[11px] rounded-lg transition flex items-center gap-1"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  Nova
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              {articles.map((art) => (
-                <div
-                  key={art.id}
-                  className="p-4 rounded-xl bg-neutral-950 border border-zinc-900 hover:border-zinc-800 flex items-center justify-between gap-4 transition group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={art.imageUrl}
-                      alt={art.title}
-                      className="w-12 h-10 object-cover rounded-lg bg-zinc-900 shrink-0 border border-zinc-800"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[8px] bg-zinc-900 text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded uppercase font-mono font-bold">
-                          {art.category}
-                        </span>
-                        {art.isPremium && (
-                          <span className="text-[8px] bg-pink-500/10 text-pink-400 px-1 border border-pink-500/15 rounded font-mono font-bold">
-                            PREMIUM
+            {/* Search and Category Filter Toolbar */}
+            <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar matéria por título, autor, tag ou localidade..."
+                  value={searchPostsQuery}
+                  onChange={(e) => setSearchPostsQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-stone-900 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-400 font-sans"
+                />
+                {searchPostsQuery && (
+                  <button
+                    onClick={() => setSearchPostsQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full custom-scrollbar">
+                {["TODAS", "NOTÍCIAS", "EVENTOS", "CURSOS", "VAGA DE EMPREGOS", "PODCAST", "COMUNIDADE", "EMBAIXADORES", "TOUR", "QUEM SOMOS"].map((cat) => {
+                  const isSelected = categoryFilterPosts === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        playClickSound(500, "sine");
+                        setCategoryFilterPosts(cat);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-mono uppercase whitespace-nowrap transition border ${
+                        isSelected
+                          ? "bg-green-400/15 border-green-400 text-green-300 font-bold"
+                          : "bg-stone-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Articles List */}
+            <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
+              {articles
+                .filter((art) => {
+                  if (categoryFilterPosts !== "TODAS" && art.category !== categoryFilterPosts) {
+                    return false;
+                  }
+                  if (searchPostsQuery.trim()) {
+                    const q = searchPostsQuery.toLowerCase();
+                    const titleMatch = art.title.toLowerCase().includes(q);
+                    const excerptMatch = (art.excerpt || "").toLowerCase().includes(q);
+                    const authorMatch = (art.author || "").toLowerCase().includes(q);
+                    const locMatch = (art.location || "").toLowerCase().includes(q);
+                    const tagMatch = (art.tags || []).some((t) => t.toLowerCase().includes(q));
+                    return titleMatch || excerptMatch || authorMatch || locMatch || tagMatch;
+                  }
+                  return true;
+                })
+                .map((art) => (
+                  <div
+                    key={art.id}
+                    className="p-3.5 rounded-xl bg-neutral-950 border border-zinc-900 hover:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <img
+                        src={art.imageUrl}
+                        alt={art.title}
+                        className="w-14 h-12 object-cover rounded-lg bg-zinc-900 shrink-0 border border-zinc-800"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[8px] bg-zinc-900 text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded uppercase font-mono font-bold">
+                            {art.category}
                           </span>
-                        )}
-                        <span className="text-[9px] text-zinc-500 font-mono">{art.location}</span>
+                          {art.isPremium && (
+                            <span className="text-[8px] bg-pink-500/10 text-pink-400 px-1 border border-pink-500/15 rounded font-mono font-bold">
+                              PREMIUM
+                            </span>
+                          )}
+                          <span className="text-[9px] text-zinc-500 font-mono">{art.location}</span>
+                          <span className="text-[9px] text-zinc-600 font-mono">• {art.readTime}</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-white truncate max-w-lg mt-1 group-hover:text-[#22c55e] transition">
+                          {art.title}
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 truncate max-w-lg font-sans">
+                          {art.excerpt}
+                        </p>
                       </div>
-                      <h4 className="text-xs font-bold text-white truncate max-w-md mt-1 group-hover:text-[#22c55e] transition">
-                        {art.title}
-                      </h4>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 font-mono text-[10px] text-zinc-500 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-900">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5 text-green-400" />
+                        {art.views} views
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleStartEditArticle(art)}
+                          className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-lg border border-amber-500/25 transition flex items-center gap-1 font-mono text-[10px] font-bold"
+                          title="Editar esta matéria"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          Editar
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            playClickSound(180, "sawtooth");
+                            onDeleteArticle(art.id);
+                          }}
+                          className="p-1.5 bg-zinc-900 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 rounded-lg border border-zinc-850 hover:border-red-500/20 transition"
+                          title="Apagar Postagem"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))}
 
-                  <div className="flex items-center gap-4 shrink-0 font-mono text-[10px] text-zinc-500">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-green-400" />
-                      {art.views} views
-                    </span>
-
-                    <button
-                      onClick={() => {
-                        playClickSound(180, "sawtooth");
-                        onDeleteArticle(art.id);
-                      }}
-                      className="p-2 bg-zinc-900 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 rounded-lg border border-zinc-850 hover:border-red-500/20 transition"
-                      title="Apagar Postagem"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              {articles.filter((art) => {
+                if (categoryFilterPosts !== "TODAS" && art.category !== categoryFilterPosts) return false;
+                if (searchPostsQuery.trim()) {
+                  const q = searchPostsQuery.toLowerCase();
+                  return (
+                    art.title.toLowerCase().includes(q) ||
+                    (art.excerpt || "").toLowerCase().includes(q) ||
+                    (art.author || "").toLowerCase().includes(q) ||
+                    (art.location || "").toLowerCase().includes(q)
+                  );
+                }
+                return true;
+              }).length === 0 && (
+                <div className="p-8 text-center bg-zinc-950/60 rounded-xl border border-zinc-900">
+                  <p className="text-xs text-zinc-400 font-mono">Nenhuma matéria encontrada para o filtro selecionado.</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

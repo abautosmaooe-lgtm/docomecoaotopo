@@ -49,6 +49,38 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
+// Suppress benign development WebSocket / HMR disconnection events and ResizeObserver loop notices
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason?.message || String(event.reason || '');
+    if (
+      reason.includes('WebSocket closed without opened') ||
+      reason.includes('failed to connect to websocket') ||
+      reason.includes('WebSocket connection') ||
+      reason.includes('CLOSING or CLOSED state') ||
+      reason.includes('speechSynthesis') ||
+      reason.includes('ResizeObserver')
+    ) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+  });
+
+  window.addEventListener('error', (event) => {
+    const msg = event.message || '';
+    if (
+      msg.includes('ResizeObserver loop') ||
+      msg.includes('WebSocket') ||
+      msg.includes('The width(-1) and height(-1)')
+    ) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+  });
+}
+
 // Helper to prune and optimize large arrays (like photo galleries, articles, logs) stored in localStorage
 function pruneLargeArrayKey(key: string, maxItems: number) {
   try {
