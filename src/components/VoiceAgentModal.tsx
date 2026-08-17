@@ -9,13 +9,20 @@ import {
 import { 
   playClickSound, playSuccessSound, playNegativeSound,
   speakWithFemaleVoice, stopSpeech, cleanTextForSpeech,
-  getAvailableFemaleVoices
+  getAvailableFemaleVoices, getVoiceDisplayName, isNeuralVoice, isPtBrVoice
 } from "../utils/audio";
 
 export interface VoiceAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigateSection?: (sectionId: string) => void;
+  onOpenDevicePreview?: () => void;
+}
+
+interface MessageOption {
+  label: string;
+  icon?: string;
+  action: () => void;
 }
 
 interface Message {
@@ -24,12 +31,14 @@ interface Message {
   text: string;
   timestamp: string;
   executedCommand?: string;
+  options?: MessageOption[];
 }
 
 export default function VoiceAgentModal({
   isOpen,
   onClose,
   onNavigateSection,
+  onOpenDevicePreview,
 }: VoiceAgentModalProps) {
   // Voice agent states: 'idle' | 'listening' | 'thinking' | 'speaking'
   const [agentState, setAgentState] = useState<"idle" | "listening" | "thinking" | "speaking">("idle");
@@ -38,7 +47,7 @@ export default function VoiceAgentModal({
   const [autoListen, setAutoListen] = useState(true); // Continuous conversation loop
   const [showSettings, setShowSettings] = useState(false);
   const [voiceRate, setVoiceRate] = useState(1.0);
-  const [voicePitch, setVoicePitch] = useState(1.2);
+  const [voicePitch, setVoicePitch] = useState(1.0);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -48,7 +57,7 @@ export default function VoiceAgentModal({
     {
       id: "welcome-voice-msg",
       sender: "bot",
-      text: "Olá! Eu sou a Topina, sua Conselheira de Negócios oficial no Portal Do Começo ao Topo. Posso te ajudar com dúvidas sobre MEI, estratégias de marketing, técnicas de vendas, gestão e crescimento empresarial. Como posso te orientar hoje?",
+      text: "Olá! Eu sou a Topina, sua Conselheira de Negócios oficial por voz no Portal Do Começo ao Topo. Falo com você em português do Brasil (PT-BR) com voz feminina neural. Como posso te orientar hoje?",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -233,157 +242,352 @@ export default function VoiceAgentModal({
     }, 9000); // 9 seconds silence limit
   };
 
-  // Voice Command Intent Analyzer & Direct Actions
-  const analyzeVoiceCommand = (rawText: string): { isNavCommand: boolean; replyText: string; commandName?: string; action?: () => void } => {
-    const text = rawText.toLowerCase().trim();
+  // Voice Command Intent Analyzer & Direct Actions with Full Keyword Mapping & Direct Redirections
+  const analyzeVoiceCommand = (rawText: string): { 
+    isNavCommand: boolean; 
+    replyText: string; 
+    commandName?: string; 
+    action?: () => void;
+    options?: MessageOption[];
+  } => {
+    // Normalize string: lowercase, remove accents for robust phonetic and speech matching
+    const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const text = normalize(rawText);
 
-    // 1. WhatsApp / Human Contact
+    // 1. WhatsApp / Falar com Atendente / Suporte Humano
     if (
       text.includes("whatsapp") || text.includes("zap") || text.includes("atendente") ||
-      text.includes("humano") || text.includes("falar com uma pessoa") || text.includes("redação")
+      text.includes("humano") || text.includes("falar com atendente") || text.includes("falar com uma pessoa") ||
+      text.includes("falar com alguem") || text.includes("suporte humano") || text.includes("redacao") ||
+      text.includes("central de atendimento") || text.includes("telefone") || text.includes("ligar")
     ) {
       return {
         isNavCommand: true,
-        commandName: "Abrir WhatsApp Oficial",
-        replyText: "Redirecionando você para o WhatsApp oficial da redação e atendimento humano do Portal Do Começo ao Topo!",
-        action: () => window.open(whatsappUrl, "_blank")
+        commandName: "Abrir WhatsApp Oficial (Atendimento Humano)",
+        replyText: "Redirecionando você para o WhatsApp oficial e atendimento humano do Portal Do Começo ao Topo! Um atendente da nossa equipe está pronto para conversar.",
+        action: () => {
+          window.open(whatsappUrl, "_blank");
+        },
+        options: [
+          { label: "📱 Falar no WhatsApp Oficial", action: () => window.open(whatsappUrl, "_blank") }
+        ]
       };
     }
 
-    // 2. Anúncios & Publicidade
+    // 2. Quem Somos / Sobre o Portal / Nossa História
     if (
-      text.includes("anunciar") || text.includes("anúncio") || text.includes("anuncio") ||
-      text.includes("patrocinar") || text.includes("patrocínio") || text.includes("mídia") ||
-      text.includes("comercial") || text.includes("quanto custa anunciar")
+      text.includes("quem somos") || text.includes("sobre") || text.includes("historia") ||
+      text.includes("sobre o portal") || text.includes("quem e a topina") || text.includes("conhecer o portal") ||
+      text.includes("institucional") || text.includes("quem faz")
     ) {
       return {
         isNavCommand: true,
-        commandName: "Ir para Mídia & Planos de Anúncio",
-        replyText: "Levando você para a nossa tabela de Planos de Anúncio e Banners Rotativos! Nossos planos começam a partir de R$ 197 por mês.",
+        commandName: "Ir para Quem Somos",
+        replyText: "Redirecionando para a seção 'Quem Somos'! Conheça a história, propósito e a equipe que constrói o maior portal de negócios da Zona da Mata.",
+        action: () => {
+          const el = document.getElementById("quem-somos-section-root") || document.getElementById("homepage-section-quem-somos") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("QUEM SOMOS");
+        },
+        options: [
+          { label: "🏢 Ver Quem Somos", action: () => onNavigateSection?.("QUEM SOMOS") },
+          { label: "📱 Falar no WhatsApp", action: () => window.open(whatsappUrl, "_blank") }
+        ]
+      };
+    }
+
+    // 3. Quero Anunciar / Planos de Anúncio / Patrocínio / Mídia Kit
+    if (
+      text.includes("anunciar") || text.includes("anuncio") || text.includes("quero anunciar") ||
+      text.includes("como anunciar") || text.includes("patrocinar") || text.includes("patrocinio") ||
+      text.includes("midia") || text.includes("comercial") || text.includes("quanto custa anunciar") ||
+      text.includes("tabela de precos") || text.includes("banner") || text.includes("propaganda") ||
+      text.includes("publicidade") || text.includes("divulgar minha empresa")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Quero Anunciar & Planos de Mídia",
+        replyText: "Redirecionando para a página 'Quero Anunciar'! Nossos planos de mídia e banners começam a partir de R$ 197 por mês para dar máxima visibilidade à sua empresa.",
         action: () => {
           const el = document.getElementById("homepage-section-advertising") || document.getElementById("portal-advertising-root") || document.getElementById("main-content-area");
           if (el) el.scrollIntoView({ behavior: "smooth" });
           onNavigateSection?.("ANUNCIOS");
-        }
+        },
+        options: [
+          { label: "🎯 Ver Planos de Anúncio", action: () => onNavigateSection?.("ANUNCIOS") },
+          { label: "💬 WhatsApp Comercial", action: () => window.open(whatsappUrl, "_blank") }
+        ]
       };
     }
 
-    // 3. Comunidade VIP & Networking
+    // 4. Comunidade VIP / Fazer Parte / Membership / Networking
     if (
       text.includes("comunidade") || text.includes("vip") || text.includes("membro") ||
-      text.includes("networking") || text.includes("filiar") || text.includes("cadastro vip")
+      text.includes("networking") || text.includes("filiar") || text.includes("fazer parte") ||
+      text.includes("quero fazer parte") || text.includes("membership") || text.includes("associacao") ||
+      text.includes("grupo de empresarios") || text.includes("clube de negocios") || text.includes("cadastro vip")
     ) {
       return {
         isNavCommand: true,
         commandName: "Ir para Comunidade VIP",
-        replyText: "Abrindo a seção da Comunidade VIP! Nossos membros contam com encontros presenciais mensais, rodadas de negócios e mentorias exclusivas.",
+        replyText: "Redirecionando para a Comunidade VIP! Nossos membros participam de encontros empresariais presenciais mensais, rodadas de negócios e mentorias estratégicas.",
         action: () => {
           const el = document.getElementById("homepage-section-membership") || document.getElementById("comunidade-section-root") || document.getElementById("main-content-area");
           if (el) el.scrollIntoView({ behavior: "smooth" });
           onNavigateSection?.("COMUNIDADE");
-        }
+        },
+        options: [
+          { label: "💎 Ver Comunidade VIP", action: () => onNavigateSection?.("COMUNIDADE") },
+          { label: "🚀 Quero Fazer Parte", action: () => onNavigateSection?.("QUERO FAZER PARTE") }
+        ]
       };
     }
 
-    // 4. Podcasts
+    // 5. Embaixadores / Conselho Empresarial
     if (
-      text.includes("podcast") || text.includes("episodio") || text.includes("episódio") ||
-      text.includes("entrevista") || text.includes("spotify") || text.includes("ouvir podcast")
+      text.includes("embaixador") || text.includes("embaixadores") || text.includes("conselho") ||
+      text.includes("lideres") || text.includes("conselho consultivo") || text.includes("diretoria")
     ) {
       return {
         isNavCommand: true,
-        commandName: "Ir para Podcasts & Entrevistas",
-        replyText: "Abrindo o player de Podcasts do Portal Do Começo ao Topo! Aqui você encontra entrevistas completas com grandes líderes empresariais.",
-        action: () => {
-          const el = document.getElementById("spotify-player-root") || document.getElementById("podcast-section-root") || document.getElementById("main-content-area");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-          onNavigateSection?.("PODCAST");
-        }
-      };
-    }
-
-    // 5. Galeria de Fotos / Eventos
-    if (
-      text.includes("galeria") || text.includes("fotos") || text.includes("eventos") ||
-      text.includes("feiras") || text.includes("cobertura")
-    ) {
-      return {
-        isNavCommand: true,
-        commandName: "Abrir Galeria de Eventos",
-        replyText: "Navegando para a Galeria de Fotos e Coberturas de Eventos Empresariais da Zona da Mata!",
-        action: () => {
-          window.dispatchEvent(new CustomEvent("navigate_section", { detail: { section: "GALERIA" } }));
-          const el = document.getElementById("galeria-section-root") || document.getElementById("homepage-section-galeria");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-          onNavigateSection?.("GALERIA");
-        }
-      };
-    }
-
-    // 6. Embaixadores
-    if (
-      text.includes("embaixador") || text.includes("embaixadores") || text.includes("conselho")
-    ) {
-      return {
-        isNavCommand: true,
-        commandName: "Ver Embaixadores da Rede",
-        replyText: "Apresentando o Conselho de Embaixadores do Portal Do Começo ao Topo! Grandes empresários que impulsionam o ecossistema regional.",
+        commandName: "Ir para Embaixadores",
+        replyText: "Redirecionando para o Conselho de Embaixadores! Conheça os grandes empresários e líderes visionários que impulsionam o Portal e a região.",
         action: () => {
           const el = document.getElementById("embaixadores-section-root") || document.getElementById("homepage-section-embaixadores") || document.getElementById("main-content-area");
           if (el) el.scrollIntoView({ behavior: "smooth" });
           onNavigateSection?.("EMBAIXADORES");
-        }
+        },
+        options: [
+          { label: "👑 Ver Conselho de Embaixadores", action: () => onNavigateSection?.("EMBAIXADORES") }
+        ]
       };
     }
 
-    // 7. Notícias
+    // 6. Contato / Fale Conosco / Onde Estamos / Endereço / Localização
     if (
-      text.includes("notícia") || text.includes("noticia") || text.includes("noticias") ||
-      text.includes("notícias de hoje") || text.includes("manchete") || text.includes("jornal")
+      text.includes("contato") || text.includes("fale conosco") || text.includes("onde fica") ||
+      text.includes("onde estamos") || text.includes("endereco") || text.includes("localizacao") ||
+      text.includes("sede") || text.includes("como chegar") || text.includes("mapa")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Contato & Localização",
+        replyText: "Redirecionando para Contato e Localização! Nossa sede fica na Rua Ataliba de Barros, 182, Sala 1107, Bairro Estrela Sul, Juiz de Fora - MG.",
+        action: () => {
+          const el = document.getElementById("contato-section-root") || document.getElementById("homepage-section-contato") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("CONTATO");
+        },
+        options: [
+          { label: "📍 Ver Endereço & Mapa", action: () => onNavigateSection?.("CONTATO") },
+          { label: "📱 Falar no WhatsApp", action: () => window.open(whatsappUrl, "_blank") }
+        ]
+      };
+    }
+
+    // 7. Notícias / Manchetes / Feed / Jornalismo de Negócios
+    if (
+      text.includes("noticia") || text.includes("noticias") || text.includes("manchete") ||
+      text.includes("feed") || text.includes("jornal") || text.includes("materia") ||
+      text.includes("ultimas noticias") || text.includes("noticias de hoje") || text.includes("economia")
     ) {
       return {
         isNavCommand: true,
         commandName: "Ir para Feed de Notícias",
-        replyText: "Levando você para o feed de Notícias e Negócios atualizado de Juiz de Fora e Sudeste de Minas!",
+        replyText: "Redirecionando para o Feed de Notícias e Negócios atualizado de Juiz de Fora e de todo o Sudeste Mineiro!",
         action: () => {
           const el = document.getElementById("main-content-area") || document.getElementById("news-feed-root");
           if (el) el.scrollIntoView({ behavior: "smooth" });
           onNavigateSection?.("NOTICIAS");
-        }
+        },
+        options: [
+          { label: "📰 Ver Feed de Notícias", action: () => onNavigateSection?.("NOTICIAS") }
+        ]
       };
     }
 
-    // 8. Onde Estamos / Localização
+    // 7.5. Instagram Feed / Stories / @podcastdocomecoaotopo
     if (
-      text.includes("onde fica") || text.includes("endereço") || text.includes("endereco") ||
-      text.includes("localização") || text.includes("localizacao") || text.includes("sede")
+      text.includes("instagram") || text.includes("insta") || text.includes("stories") ||
+      text.includes("feed do insta") || text.includes("publicacoes") || text.includes("reels")
     ) {
       return {
         isNavCommand: true,
-        commandName: "Ver Localização da Sede",
-        replyText: "Nossa sede principal fica na Rua Ataliba de Barros, 182, Sala 1107, Bairro Estrela Sul em Juiz de Fora - MG!",
+        commandName: "Ir para Feed do Instagram",
+        replyText: "Redirecionando para o Feed Oficial do Instagram @podcastdocomecoaotopo! Confira cortes, fotos e stories recentes.",
         action: () => {
-          const el = document.getElementById("contato-section-root") || document.getElementById("homepage-section-contato");
+          const el = document.getElementById("instagram-feed-section-root") || document.getElementById("homepage-section-instagram");
           if (el) el.scrollIntoView({ behavior: "smooth" });
-          onNavigateSection?.("CONTATO");
-        }
+        },
+        options: [
+          { label: "📸 Ver Feed do Instagram", action: () => {
+            const el = document.getElementById("instagram-feed-section-root");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }},
+          { label: "📱 Abrir Perfil Oficial", action: () => window.open("https://www.instagram.com/podcastdocomecoaotopo/", "_blank") }
+        ]
       };
     }
 
-    // 9. Vagas de Emprego
+    // 7.6. Simulador de Telas / Celular / Tablet / Modo Tela
+    if (
+      text.includes("tela") || text.includes("telas") || text.includes("celular") ||
+      text.includes("tablet") || text.includes("dispositivo") || text.includes("dispositivos") ||
+      text.includes("simulador") || text.includes("responsivo") || text.includes("smartphone")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Abrir Simulador de Telas (Celular/Tablet)",
+        replyText: "Abrindo o Simulador de Telas! Aqui você pode testar e apresentar como o portal se adapta em Smartphone e Tablet padrão.",
+        action: () => {
+          onOpenDevicePreview?.();
+        },
+        options: [
+          { label: "📱 Abrir Simulador de Telas", action: () => onOpenDevicePreview?.() }
+        ]
+      };
+    }
+
+    // 8. Podcasts & Entrevistas / YouTube / Spotify / Player
+    if (
+      text.includes("podcast") || text.includes("podcasts") || text.includes("episodio") ||
+      text.includes("entrevista") || text.includes("spotify") || text.includes("youtube") ||
+      text.includes("ouvir podcast") || text.includes("assistir entrevista") || text.includes("audio")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Podcasts & Entrevistas",
+        replyText: "Redirecionando para o Player de Podcasts! Aqui você confere bate-papos e entrevistas inspiradoras com referências do mercado.",
+        action: () => {
+          const el = document.getElementById("spotify-player-root") || document.getElementById("podcast-section-root") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("PODCAST");
+        },
+        options: [
+          { label: "🎙️ Abrir Player de Podcasts", action: () => onNavigateSection?.("PODCAST") }
+        ]
+      };
+    }
+
+    // 9. Galeria / Fotos / Eventos / Coberturas
+    if (
+      text.includes("galeria") || text.includes("foto") || text.includes("fotos") ||
+      text.includes("evento") || text.includes("eventos") || text.includes("feira") ||
+      text.includes("feiras") || text.includes("cobertura") || text.includes("album")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Galeria de Fotos & Eventos",
+        replyText: "Redirecionando para a Galeria de Fotos e Cobertura dos principais Eventos Empresariais da região!",
+        action: () => {
+          window.dispatchEvent(new CustomEvent("navigate_section", { detail: { section: "GALERIA" } }));
+          const el = document.getElementById("galeria-section-root") || document.getElementById("homepage-section-galeria") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("GALERIA");
+        },
+        options: [
+          { label: "📸 Ver Galeria de Fotos", action: () => onNavigateSection?.("GALERIA") }
+        ]
+      };
+    }
+
+    // 10. Objetivos / Missão / Visão / Valores
+    if (
+      text.includes("objetivo") || text.includes("objetivos") || text.includes("missao") ||
+      text.includes("visao") || text.includes("valores") || text.includes("proposito")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Objetivos & Missão",
+        replyText: "Redirecionando para os Objetivos e Diretrizes Estratégicas do Portal Do Começo ao Topo!",
+        action: () => {
+          const el = document.getElementById("objetivos-section-root") || document.getElementById("homepage-section-objetivos") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("OBJETIVOS");
+        },
+        options: [
+          { label: "🎯 Ver Objetivos", action: () => onNavigateSection?.("OBJETIVOS") }
+        ]
+      };
+    }
+
+    // 11. Parceiros / Marcas Apoiadoras / Empresas Conectadas
+    if (
+      text.includes("parceiro") || text.includes("parceiros") || text.includes("apoiadores") ||
+      text.includes("marcas") || text.includes("empresas parceiras") || text.includes("patrocinadores")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Empresas Parceiras",
+        replyText: "Redirecionando para o painel de Empresas Parceiras e apoiadoras do ecossistema Do Começo ao Topo!",
+        action: () => {
+          const el = document.getElementById("parceiros-section-root") || document.getElementById("homepage-section-parceiros") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("PARCEIROS");
+        },
+        options: [
+          { label: "🤝 Ver Parceiros", action: () => onNavigateSection?.("PARCEIROS") }
+        ]
+      };
+    }
+
+    // 12. Depoimentos / Vozes Femininas / Cases de Sucesso
+    if (
+      text.includes("depoimento") || text.includes("depoimentos") || text.includes("vozes femininas") ||
+      text.includes("cases") || text.includes("historias de sucesso") || text.includes("avaliacao")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Depoimentos & Vozes Femininas",
+        replyText: "Redirecionando para Depoimentos e Vozes Femininas! Histórias inspiradoras de empreendedoras e líderes regionais.",
+        action: () => {
+          const el = document.getElementById("depoimentos-section-root") || document.getElementById("homepage-section-depoimentos") || document.getElementById("main-content-area");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          onNavigateSection?.("DEPOIMENTOS");
+        },
+        options: [
+          { label: "🌸 Ver Depoimentos", action: () => onNavigateSection?.("DEPOIMENTOS") }
+        ]
+      };
+    }
+
+    // 13. Vagas de Emprego / Oportunidades / Trabalhe Conosco
     if (
       text.includes("vaga") || text.includes("vagas") || text.includes("trabalho") ||
-      text.includes("emprego") || text.includes("oportunidade")
+      text.includes("emprego") || text.includes("oportunidade") || text.includes("oportunidades") ||
+      text.includes("carreira") || text.includes("trabalhe conosco")
     ) {
       return {
         isNavCommand: true,
-        commandName: "Ir para Mural de Oportunidades",
-        replyText: "Abrindo o Mural de Vagas e Oportunidades de empresas parceiras do portal!",
+        commandName: "Ir para Mural de Vagas e Oportunidades",
+        replyText: "Redirecionando para o Mural de Vagas e Oportunidades das empresas conveniadas ao portal!",
         action: () => {
-          const el = document.getElementById("vagas-section-root") || document.getElementById("homepage-section-vagas");
+          const el = document.getElementById("vagas-section-root") || document.getElementById("homepage-section-vagas") || document.getElementById("main-content-area");
           if (el) el.scrollIntoView({ behavior: "smooth" });
           onNavigateSection?.("VAGAS");
-        }
+        },
+        options: [
+          { label: "💼 Ver Vagas & Oportunidades", action: () => onNavigateSection?.("VAGAS") }
+        ]
+      };
+    }
+
+    // 14. Início / Feed Principal / Voltar ao Topo / Home
+    if (
+      text.includes("inicio") || text.includes("home") || text.includes("pagina inicial") ||
+      text.includes("voltar ao topo") || text.includes("recomecar") || text.includes("topo do site")
+    ) {
+      return {
+        isNavCommand: true,
+        commandName: "Ir para Página Inicial",
+        replyText: "Redirecionando para o Início do portal!",
+        action: () => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          onNavigateSection?.("NOTICIAS");
+        },
+        options: [
+          { label: "🏠 Ir para o Início", action: () => { window.scrollTo({ top: 0, behavior: "smooth" }); onNavigateSection?.("NOTICIAS"); } }
+        ]
       };
     }
 
@@ -415,6 +619,7 @@ export default function VoiceAgentModal({
         sender: "bot",
         text: commandResult.replyText,
         executedCommand: commandResult.commandName,
+        options: commandResult.options,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
@@ -576,20 +781,23 @@ export default function VoiceAgentModal({
               />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-display font-black text-white text-base tracking-wider flex items-center gap-1.5">
-                  TOPINA AGENTE DE VOZ
+                  TOPINA • AGENTE POR VOZ
                 </h3>
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                  🇧🇷 IDIOMA PT-BR
+                </span>
                 <span className="bg-pink-500/20 text-pink-300 border border-pink-500/40 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 text-pink-400" />
-                  VOZ FEMININA COM IA
+                  VOZ FEMININA NEURAL
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-mono">
-                {agentState === "listening" && "🎙️ Ouvindo você... Pode falar!"}
-                {agentState === "thinking" && "⚡ Consultando dados do Portal e IA..."}
-                {agentState === "speaking" && "🔊 Topina falando com voz feminina..."}
-                {agentState === "idle" && "✨ Agente por voz pronta para conversar."}
+              <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                {agentState === "listening" && "🎙️ Ouvindo você em português (PT-BR)... Pode falar!"}
+                {agentState === "thinking" && "⚡ Raciocinando com Gemini 3.1 Pro (High Thinking)..."}
+                {agentState === "speaking" && "🔊 Topina falando em português com voz feminina neural..."}
+                {agentState === "idle" && "✨ Agente por voz pronta para conversar em português."}
               </p>
             </div>
           </div>
@@ -605,7 +813,7 @@ export default function VoiceAgentModal({
                   ? "bg-green-500/20 text-green-400 border-green-500/40"
                   : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white"
               }`}
-              title="Configurações de Voz"
+              title="Configurações de Voz Neural PT-BR"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -634,24 +842,87 @@ export default function VoiceAgentModal({
               exit={{ height: 0, opacity: 0 }}
               className="border-b border-zinc-800 bg-zinc-900/95 p-4 z-20 overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <div className="flex items-center gap-2 text-xs font-mono font-bold text-green-400 uppercase">
                   <Sliders className="w-3.5 h-3.5" />
-                  <span>Ajustes da Voz Feminina</span>
+                  <span>Ajustes da Voz Feminina Neural (PT-BR)</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      playClickSound(800, "sine");
+                      setVoiceRate(1.0);
+                      setVoicePitch(1.0);
+                    }}
+                    className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-[10px] font-mono uppercase transition border border-zinc-700"
+                    title="Redefinir para padrão Neural Natural"
+                  >
+                    Padrão Neural
+                  </button>
+                  <button
+                    onClick={testFemaleVoice}
+                    className="px-3 py-1 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-[10px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm"
+                  >
+                    <Volume2 className="w-3 h-3" />
+                    Testar Voz Neural
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="mb-3 flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono text-zinc-500">Perfis Rápidos:</span>
                 <button
-                  onClick={testFemaleVoice}
-                  className="px-3 py-1 bg-pink-600 hover:bg-pink-500 text-white rounded-lg text-[10px] font-mono font-bold uppercase transition flex items-center gap-1 shadow-sm"
+                  type="button"
+                  onClick={() => {
+                    playClickSound(750, "sine");
+                    setVoiceRate(1.0);
+                    setVoicePitch(1.0);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono transition border ${
+                    voicePitch === 1.0 && voiceRate === 1.0
+                      ? "bg-green-500/20 text-green-300 border-green-500/40"
+                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                  }`}
                 >
-                  <Volume2 className="w-3 h-3" />
-                  Testar Voz Feminina
+                  ⚡ Neural Natural (1.0x / Tom 1.0)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound(750, "sine");
+                    setVoiceRate(0.95);
+                    setVoicePitch(1.08);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono transition border ${
+                    voicePitch === 1.08 && voiceRate === 0.95
+                      ? "bg-pink-500/20 text-pink-300 border-pink-500/40"
+                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                  }`}
+                >
+                  🌸 Acolhedora Suave (0.95x / Tom 1.08)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound(750, "sine");
+                    setVoiceRate(1.1);
+                    setVoicePitch(1.02);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono transition border ${
+                    voicePitch === 1.02 && voiceRate === 1.1
+                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                  }`}
+                >
+                  🚀 Dinâmica Executiva (1.1x / Tom 1.02)
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Voice Selection */}
                 <div>
-                  <label className="text-[10px] font-mono text-zinc-400 block mb-1">Voz do Sistema (PT):</label>
+                  <label className="text-[10px] font-mono text-zinc-400 block mb-1">Voz Feminina (PT-BR):</label>
                   <select
                     value={selectedVoiceName}
                     onChange={(e) => setSelectedVoiceName(e.target.value)}
@@ -660,11 +931,11 @@ export default function VoiceAgentModal({
                     {availableVoices.length > 0 ? (
                       availableVoices.map((v) => (
                         <option key={v.name} value={v.name}>
-                          {v.name} ({v.lang})
+                          {getVoiceDisplayName(v)}
                         </option>
                       ))
                     ) : (
-                      <option value="">Voz Feminina Padrão (pt-BR)</option>
+                      <option value="">Voz Feminina Neural (pt-BR Padrão)</option>
                     )}
                   </select>
                 </div>
@@ -694,9 +965,9 @@ export default function VoiceAgentModal({
                   </div>
                   <input
                     type="range"
-                    min="0.9"
-                    max="1.5"
-                    step="0.05"
+                    min="0.8"
+                    max="1.4"
+                    step="0.02"
                     value={voicePitch}
                     onChange={(e) => setVoicePitch(parseFloat(e.target.value))}
                     className="w-full accent-pink-500 bg-zinc-800 rounded-lg cursor-pointer h-1.5"
@@ -708,7 +979,7 @@ export default function VoiceAgentModal({
               <div className="mt-3 pt-2 border-t border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap className="w-3.5 h-3.5 text-green-400" />
-                  <span className="text-xs text-zinc-200 font-medium">Conversação Contínua (Hands-Free):</span>
+                  <span className="text-xs text-zinc-200 font-medium">Conversação Contínua (Hands-Free em PT-BR):</span>
                 </div>
                 <button
                   onClick={() => {
@@ -992,6 +1263,25 @@ export default function VoiceAgentModal({
                     <div className="mt-2.5 pt-2 border-t border-zinc-800 flex items-center gap-1.5 text-[10px] font-mono text-green-400">
                       <Zap className="w-3 h-3 text-green-400" />
                       <span>Comando Executado: <strong>{msg.executedCommand}</strong></span>
+                    </div>
+                  )}
+
+                  {/* Interactive Quick Links / Navigation Buttons if available */}
+                  {msg.options && msg.options.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-zinc-800/80 flex flex-wrap gap-1.5">
+                      {msg.options.map((opt, optIdx) => (
+                        <button
+                          key={optIdx}
+                          onClick={() => {
+                            playClickSound(650, "sine");
+                            opt.action();
+                          }}
+                          className="px-2.5 py-1 bg-green-950/60 hover:bg-green-900 border border-green-500/40 hover:border-green-400 text-green-300 hover:text-white rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 shadow-sm"
+                        >
+                          <span>{opt.label}</span>
+                          <ArrowUpRight className="w-3 h-3 text-green-400" />
+                        </button>
+                      ))}
                     </div>
                   )}
 

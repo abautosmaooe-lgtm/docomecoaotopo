@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CloudSun, Sun, CloudRain, MapPin, Calendar, Clock, ChevronRight, ChevronLeft, LogOut, User, Sparkles, ScanFace, Hand } from "lucide-react";
+import { CloudSun, Sun, CloudRain, MapPin, Calendar, Clock, ChevronRight, ChevronLeft, LogOut, User, Sparkles, ScanFace, Hand, Smartphone, PartyPopper, Mic } from "lucide-react";
 import { AppUser } from "../types";
 import { playClickSound } from "../utils/audio";
 
@@ -12,6 +12,9 @@ interface CollapsibleHeaderWeatherProps {
   onOpenProfile: () => void;
   onOpenFaceNav?: () => void;
   onOpenHandNav?: () => void;
+  onOpenDevicePreview?: () => void;
+  onOpenWelcome?: () => void;
+  onOpenVoiceAgent?: () => void;
 }
 
 export default function CollapsibleHeaderWeather({
@@ -22,6 +25,9 @@ export default function CollapsibleHeaderWeather({
   onOpenProfile,
   onOpenFaceNav,
   onOpenHandNav,
+  onOpenDevicePreview,
+  onOpenWelcome,
+  onOpenVoiceAgent,
 }: CollapsibleHeaderWeatherProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [time, setTime] = useState(new Date());
@@ -203,6 +209,67 @@ export default function CollapsibleHeaderWeather({
           >
             <ScanFace className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span className="hidden md:inline">Rosto</span>
+          </button>
+        )}
+
+        {onOpenDevicePreview && (
+          <button
+            onClick={() => {
+              playClickSound(850, "sine");
+              onOpenDevicePreview();
+            }}
+            type="button"
+            title="Simulador de Telas (Celular / Tablet)"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition ${
+              isDarkMode
+                ? "bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-teal-500/50 text-teal-300 hover:border-teal-400 hover:bg-teal-500/20 shadow-xs"
+                : "bg-teal-50 border border-teal-600/40 text-teal-800 hover:bg-teal-100 shadow-xs"
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5 text-teal-400 animate-bounce" />
+            <span>Tela</span>
+          </button>
+        )}
+
+        {onOpenWelcome && (
+          <button
+            onClick={() => {
+              playClickSound(900, "sine");
+              onOpenWelcome();
+            }}
+            type="button"
+            title="Abrir Modal Interativo de Boas-Vindas com Apresentação da Topina e Opções de Acesso"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition shadow-sm ${
+              isDarkMode
+                ? "bg-gradient-to-r from-green-950/90 to-emerald-950/90 border border-green-500/60 text-green-300 hover:border-green-400 hover:text-white hover:bg-green-500/20"
+                : "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-600/50 text-green-700 hover:border-green-600 hover:text-green-950 hover:bg-green-100"
+            }`}
+            id="header-welcome-popup-btn"
+          >
+            <PartyPopper className="w-3.5 h-3.5 text-green-400 animate-bounce" />
+            <span className="hidden sm:inline">Boas-Vindas</span>
+            <span className="sm:hidden">Boas-Vindas</span>
+          </button>
+        )}
+
+        {onOpenVoiceAgent && (
+          <button
+            onClick={() => {
+              playClickSound(850, "sine");
+              onOpenVoiceAgent();
+            }}
+            type="button"
+            title="Conversar com a Topina por Voz (Voz Neural PT-BR com IA)"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition shadow-sm ${
+              isDarkMode
+                ? "bg-gradient-to-r from-pink-950/90 to-purple-950/90 border border-pink-500/60 text-pink-300 hover:border-pink-400 hover:text-white hover:bg-pink-500/20"
+                : "bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-600/50 text-pink-700 hover:border-pink-600 hover:text-pink-950 hover:bg-pink-100"
+            }`}
+            id="header-voice-agent-trigger-btn"
+          >
+            <Mic className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+            <span className="hidden sm:inline">Voz Neural (PT-BR)</span>
+            <span className="sm:hidden">Voz</span>
           </button>
         )}
 

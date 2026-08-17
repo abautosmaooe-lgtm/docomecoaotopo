@@ -829,11 +829,12 @@ export const TopinaAssistant: React.FC<{
                 <div>
                   <div className="font-display font-black text-white text-xs tracking-wider flex items-center gap-1.5">
                     TOPINA AI AGENT
-                    <span className="bg-green-500/15 text-green-400 border border-green-500/30 text-[8px] font-mono font-bold px-1.5 py-0.2 rounded uppercase">
-                      INTENT & GOOGLE SEARCH
+                    <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[8px] font-mono font-bold px-1.5 py-0.2 rounded uppercase flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 text-emerald-400 animate-pulse" />
+                      GEMINI 3.1 PRO • HIGH THINKING
                     </span>
                   </div>
-                  <div className="text-[9.5px] text-zinc-400 font-mono">Classificação de Intenção & Busca Google</div>
+                  <div className="text-[9.5px] text-zinc-400 font-mono">Modo de Raciocínio Avançado & Busca Google</div>
                 </div>
               </div>
               
@@ -1096,9 +1097,9 @@ export const TopinaAssistant: React.FC<{
                   })}
 
                   {isLoading && (
-                    <div className="flex items-center gap-2 p-3 bg-zinc-900/80 rounded-2xl rounded-tl-none border border-zinc-800 w-max text-xs text-zinc-400 font-mono animate-pulse">
-                      <Sparkles className="w-3.5 h-3.5 text-green-400 animate-spin" />
-                      <span>Classificando intenção e processando resposta...</span>
+                    <div className="flex items-center gap-2 p-3 bg-zinc-900/90 rounded-2xl rounded-tl-none border border-emerald-500/30 w-max text-xs text-zinc-300 font-mono animate-pulse shadow-md">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+                      <span>Raciocinando profundamente com Gemini 3.1 Pro...</span>
                     </div>
                   )}
 

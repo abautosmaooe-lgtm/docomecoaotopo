@@ -56,7 +56,8 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
-  Crown
+  Crown,
+  PartyPopper
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import VLibras from '@djpfs/react-vlibras';
@@ -94,6 +95,8 @@ import AgendaCalendar from "./components/AgendaCalendar";
 import UpcomingEventsSection from "./components/UpcomingEventsSection";
 import MonthlyHighlightsSection from "./components/MonthlyHighlightsSection";
 import PartnersCarousel from "./components/PartnersCarousel";
+import InstagramFeedSection from "./components/InstagramFeedSection";
+import DevicePreviewModal from "./components/DevicePreviewModal";
 import { playClickSound, playSuccessSound, playNegativeSound, isSoundEnabled, setSoundEnabled } from "./utils/audio";
 import { TopinaAssistant } from "./components/TopinaAssistant";
 import VoiceAgentModal from "./components/VoiceAgentModal";
@@ -109,6 +112,7 @@ import RSVPEvent from "./components/RSVPEvent";
 import PendingApprovalScreen from "./components/PendingApprovalScreen";
 import WelcomePopup from "./components/WelcomePopup";
 import SiteTourModal from "./components/SiteTourModal";
+import RocketLaunchModal from "./components/RocketLaunchModal";
 import { auth, trackPageView, trackEngagementEvent, trackArticleView, trackUserAction } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
@@ -135,10 +139,12 @@ export default function App() {
   const [showEventPopup, setShowEventPopup] = useState(true);
   const [showRodadaPopup, setShowRodadaPopup] = useState(false);
   const [isVoiceAgentOpen, setIsVoiceAgentOpen] = useState(false);
+  const [isDevicePreviewOpen, setIsDevicePreviewOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [rocketClicks, setRocketClicks] = useState(0);
   const [showRocketModal, setShowRocketModal] = useState(false);
+  const [showRocketLaunchTourModal, setShowRocketLaunchTourModal] = useState(false);
 
   React.useEffect(() => {
     console.log(
@@ -1845,12 +1851,17 @@ export default function App() {
       )}
 
       <TopinaAssistant isCollapsed={areFloatingButtonsCollapsed} />
-
-      {/* <RodadaCountdownBanner
+      
+      <RodadaCountdownBanner
         isDirectEditingEnabled={isDirectEditingEnabled}
         portalPagesConfig={portalPagesConfig}
         onSavePortalPagesConfig={handleSavePortalPagesConfig}
-      /> */}
+        onTriggerRocketPresentation={() => setShowRocketLaunchTourModal(true)}
+        onOpenWelcome={() => {
+          playClickSound(850, "sine");
+          setShowWelcomePopup(true);
+        }}
+      />
 
       {/* TOP ALERT FOR OFFLINE MODE */}
       {isOfflineActive && (
@@ -1910,6 +1921,15 @@ export default function App() {
             }}
             onOpenFaceNav={() => setMotionNavMode("face")}
             onOpenHandNav={() => setMotionNavMode("hands")}
+            onOpenDevicePreview={() => setIsDevicePreviewOpen(true)}
+            onOpenWelcome={() => {
+              playClickSound(850, "sine");
+              setShowWelcomePopup(true);
+            }}
+            onOpenVoiceAgent={() => {
+              playClickSound(900, "sine");
+              setIsVoiceAgentOpen(true);
+            }}
           />
 
           {/* Primary Navbar Branding and configuration controls */}
@@ -2091,6 +2111,20 @@ export default function App() {
                           } transition text-[10px] font-mono font-bold uppercase tracking-widest border-b flex items-center gap-2`}
                         >
                           <Globe className="w-3.5 h-3.5" /> FEED PRINCIPAL
+                        </button>
+                        <button
+                          onClick={() => {
+                            playClickSound(850, "sine");
+                            setNavInicioOpen(false);
+                            setShowWelcomePopup(true);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 ${
+                            isDarkMode 
+                              ? "hover:bg-green-950/40 text-green-400 hover:text-green-300 border-zinc-900" 
+                              : "hover:bg-green-50 text-green-700 hover:text-green-900 border-stone-100"
+                          } transition text-[10px] font-mono font-bold uppercase tracking-wider border-b flex items-center gap-2`}
+                        >
+                          <PartyPopper className="w-3.5 h-3.5 text-green-400 animate-pulse" /> BOAS-VINDAS (APRESENTAÇÃO)
                         </button>
                         <button
                           onClick={() => {
@@ -5173,7 +5207,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* ROTATING BANNER ADS */}
+              {/* ROTATING BANNER ADS (OCULTADO A PEDIDO DO USUÁRIO) */}
+              {/*
               {selectedCategory === null && activeSection === null && (
                 <div 
                   style={{ order: homepageSectionsOrder.indexOf("ads") }} 
@@ -5212,6 +5247,7 @@ export default function App() {
                   <RotatingBannerAds isDarkMode={isDarkMode} isAdmin={isDirectEditingEnabled} />
                 </div>
               )}
+              */}
             </motion.div>
           )}
         </AnimatePresence>
@@ -5391,6 +5427,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* INSTAGRAM FEED SECTION BEFORE PARTNER BRANDS - @podcastdocomecoaotopo */}
+      {!(activeSection === "PARCEIROS" || selectedCategory === "PARCEIROS") && (
+        <InstagramFeedSection 
+          isDarkMode={isDarkMode} 
+          isAdmin={isDirectEditingEnabled} 
+        />
+      )}
+
       {/* PARTNER BRANDS CONTINUOUS SLIDER BEFORE FOOTER - ON ALL PAGES EXCEPT PARCEIROS */}
       {!(activeSection === "PARCEIROS" || selectedCategory === "PARCEIROS") && (
         <section id="global-partner-brands-section" className={`w-full border-t ${isDarkMode ? "border-zinc-900 bg-stone-950/70" : "border-stone-200 bg-stone-50/90"}`}>
@@ -5562,6 +5606,7 @@ export default function App() {
       <VoiceAgentModal
         isOpen={isVoiceAgentOpen}
         onClose={() => setIsVoiceAgentOpen(false)}
+        onOpenDevicePreview={() => setIsDevicePreviewOpen(true)}
         onNavigateSection={(sectionId) => {
           if (sectionId === "NOTICIAS") {
             setActiveSection("FEED");
@@ -5574,16 +5619,68 @@ export default function App() {
             setActiveSection("GALERIA");
             window.scrollTo({ top: 400, behavior: "smooth" });
           } else if (sectionId === "COMUNIDADE") {
+            setSelectedCategory("COMUNIDADE");
+            setActiveSection("FEED");
             const el = document.getElementById("homepage-section-membership") || document.getElementById("comunidade-section-root");
             if (el) el.scrollIntoView({ behavior: "smooth" });
-          } else if (sectionId === "ANUNCIOS") {
+          } else if (sectionId === "ANUNCIOS" || sectionId === "ANUNCIE AQUI") {
+            setActiveSection("ANUNCIE AQUI");
+            setSelectedCategory(null);
             const el = document.getElementById("homepage-section-advertising") || document.getElementById("portal-advertising-root");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           } else if (sectionId === "EMBAIXADORES") {
+            setSelectedCategory("EMBAIXADORES");
+            setActiveSection("FEED");
             const el = document.getElementById("embaixadores-section-root") || document.getElementById("homepage-section-embaixadores");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           } else if (sectionId === "CONTATO") {
+            setActiveSection("CONTATO");
+            setSelectedCategory(null);
             const el = document.getElementById("contato-section-root") || document.getElementById("homepage-section-contato");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "QUEM SOMOS") {
+            setActiveSection("QUEM SOMOS");
+            setSelectedCategory(null);
+            const el = document.getElementById("quem-somos-section-root") || document.getElementById("homepage-section-quem-somos");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "OBJETIVOS") {
+            setActiveSection("OBJETIVOS");
+            setSelectedCategory(null);
+            const el = document.getElementById("objetivos-section-root") || document.getElementById("homepage-section-objetivos");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "ONDE ESTAMOS") {
+            setActiveSection("ONDE ESTAMOS");
+            setSelectedCategory(null);
+            const el = document.getElementById("onde-estamos-section-root") || document.getElementById("homepage-section-onde-estamos") || document.getElementById("contato-section-root");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "PARCEIROS") {
+            setActiveSection("PARCEIROS");
+            setSelectedCategory(null);
+            const el = document.getElementById("parceiros-section-root") || document.getElementById("homepage-section-parceiros");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "DEPOIMENTOS") {
+            setActiveSection("DEPOIMENTOS");
+            setSelectedCategory(null);
+            const el = document.getElementById("depoimentos-section-root") || document.getElementById("homepage-section-depoimentos");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "QUERO FAZER PARTE") {
+            setActiveSection("QUERO FAZER PARTE");
+            setSelectedCategory(null);
+            const el = document.getElementById("homepage-section-membership") || document.getElementById("fazer-parte-section-root");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "RSVP") {
+            setActiveSection("RSVP");
+            setSelectedCategory(null);
+            const el = document.getElementById("rsvp-section-root");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "CATEGORIAS") {
+            setActiveSection("CATEGORIAS");
+            setSelectedCategory(null);
+            const el = document.getElementById("categorias-section-root");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          } else if (sectionId === "VAGAS") {
+            setActiveSection("FEED");
+            const el = document.getElementById("vagas-section-root") || document.getElementById("homepage-section-vagas");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           }
         }}
@@ -5594,6 +5691,13 @@ export default function App() {
         isOpen={motionNavMode !== null}
         initialMode={motionNavMode || "face"}
         onClose={() => setMotionNavMode(null)}
+      />
+
+      {/* DEVICE PREVIEW SIMULATOR MODAL (MOBILE & TABLET TESTER) */}
+      <DevicePreviewModal
+        isOpen={isDevicePreviewOpen}
+        onClose={() => setIsDevicePreviewOpen(false)}
+        isDarkMode={isDarkMode}
       />
 
       {/* FLOATING PICTURE-IN-PICTURE PODCAST VIDEO PLAYER */}
@@ -5870,6 +5974,10 @@ export default function App() {
               subtitle="Dia 17 Agosto | 19h"
               image="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRYer0HiBG4YMv-tueznhCQeXqIJ52gc8_vru2u9_MR_L64O_2dCG98yfD&s=10"
               isEditable={isDirectEditingEnabled}
+              onOpenTour={() => {
+                setShowEventPopup(false);
+                setIsSiteTourOpen(true);
+              }}
               onJoin={() => {
                 setShowEventPopup(false);
                 setActiveSection("RSVP");
@@ -6240,6 +6348,17 @@ export default function App() {
             </form>
           </div>
         </div>
+      )}
+
+      {showRocketLaunchTourModal && (
+        <RocketLaunchModal
+          isOpen={showRocketLaunchTourModal}
+          onClose={() => setShowRocketLaunchTourModal(false)}
+          onOpenSiteTour={() => {
+            setShowRocketLaunchTourModal(false);
+            setIsSiteTourOpen(true);
+          }}
+        />
       )}
 
       {showRocketModal && (

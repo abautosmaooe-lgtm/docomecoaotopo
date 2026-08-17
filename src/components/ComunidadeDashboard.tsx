@@ -205,7 +205,7 @@ export default function ComunidadeDashboard({
         return Number(saved) as 1 | 2 | 3 | 4;
       }
     } catch {}
-    return 2; // Default to 2 columns for large, prominent, ambassador-style cards
+    return 4; // Default to 4 columns - card configuration
   });
 
   // Expanded card for accordion details (Ambassador model)
@@ -939,9 +939,23 @@ export default function ComunidadeDashboard({
     });
   }, [members, selectedMonth]);
 
-  // Process filters
+  // Helper to extract sequential registration order for each member
+  const getMemberRegistrationIndex = (m: Member, fallbackIdx: number = 0): number => {
+    if (!m || !m.id) return fallbackIdx + 1;
+    const matchNum = m.id.match(/member-(\d+)/i);
+    if (matchNum) {
+      return parseInt(matchNum[1], 10);
+    }
+    const matchTs = m.id.match(/m-(\d+)/i);
+    if (matchTs) {
+      return 21 + Math.floor((parseInt(matchTs[1], 10) - 1700000000000) / 1000000);
+    }
+    return 100 + fallbackIdx;
+  };
+
+  // Process filters and organize by registration order
   const filteredMembers = useMemo(() => {
-    return members.filter((member) => {
+    const list = members.filter((member) => {
       if (!member) return false;
       // 1. Search term match name, bio or role
       const searchTarget = `${member.name || ""} ${member.role || ""} ${member.bio || ""}`.toLowerCase();
@@ -977,6 +991,11 @@ export default function ComunidadeDashboard({
       }
 
       return true;
+    });
+
+    // Strictly sort by Registration Order (Ordem de Cadastro: #1, #2, #3, ...)
+    return [...list].sort((a, b) => {
+      return getMemberRegistrationIndex(a) - getMemberRegistrationIndex(b);
     });
   }, [members, searchTerm, selectedBranch, selectedCity, alphabetLetter, onlyBirthdaysFilter, selectedMonth]);
 
@@ -2284,8 +2303,11 @@ export default function ComunidadeDashboard({
 
                         {/* Bottom Tag on Image */}
                         <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-                          <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md bg-emerald-950/90 text-emerald-300 border border-emerald-500/30 backdrop-blur-sm">
+                          <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md bg-emerald-950/90 text-emerald-300 border border-emerald-500/30 backdrop-blur-sm truncate max-w-[70%]">
                             ✨ {m.branch}
+                          </span>
+                          <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded-md bg-black/85 text-zinc-300 border border-zinc-700/60 backdrop-blur-sm" title={`Membro Cadastrado Nº ${getMemberRegistrationIndex(m)}`}>
+                            #{getMemberRegistrationIndex(m).toString().padStart(2, "0")}
                           </span>
                         </div>
                       </div>

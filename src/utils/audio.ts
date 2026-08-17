@@ -112,7 +112,9 @@ export function playNegativeSound() {
 
 export function stopSpeech() {
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {}
   }
 }
 
@@ -121,6 +123,53 @@ export function getAvailableVoices(): SpeechSynthesisVoice[] {
     return [];
   }
   return window.speechSynthesis.getVoices();
+}
+
+export function isNeuralVoice(voice: SpeechSynthesisVoice): boolean {
+  const name = voice.name.toLowerCase();
+  return (
+    name.includes("natural") ||
+    name.includes("neural") ||
+    name.includes("online") ||
+    name.includes("google") ||
+    name.includes("enhanced") ||
+    name.includes("premium") ||
+    name.includes("wavenet") ||
+    name.includes("francisca") ||
+    name.includes("thalita") ||
+    name.includes("brenda") ||
+    name.includes("leticia") ||
+    name.includes("yaris")
+  );
+}
+
+export function isPtBrVoice(voice: SpeechSynthesisVoice): boolean {
+  const lang = (voice.lang || "").toLowerCase().replace("_", "-");
+  return lang.startsWith("pt-br") || lang === "pt" || lang.startsWith("pt");
+}
+
+export function getVoiceDisplayName(voice: SpeechSynthesisVoice): string {
+  const isNeural = isNeuralVoice(voice);
+  const isPt = isPtBrVoice(voice);
+  let baseName = voice.name
+    .replace(/Microsoft /gi, "")
+    .replace(/Google /gi, "")
+    .replace(/Apple /gi, "")
+    .replace(/Online \(Natural\) - /gi, "")
+    .replace(/ - Portuguese \(Brazil\)/gi, "")
+    .replace(/\(pt-BR\)/gi, "")
+    .trim();
+
+  let tag = "";
+  if (isNeural && isPt) {
+    tag = " ⚡ Neural PT-BR";
+  } else if (isPt) {
+    tag = " 🇧🇷 PT-BR";
+  } else if (isNeural) {
+    tag = " ⚡ Neural";
+  }
+
+  return `${baseName}${tag}`;
 }
 
 export function getAvailableFemaleVoices(): SpeechSynthesisVoice[] {
@@ -136,10 +185,42 @@ export function getAvailableFemaleVoices(): SpeechSynthesisVoice[] {
     "vitor", "renato", "vinicius", "rafael"
   ];
 
-  return voices.filter((v) => {
+  const filtered = voices.filter((v) => {
     const nameLower = v.name.toLowerCase();
     const isMale = maleKeywords.some((kw) => nameLower.includes(kw));
     return !isMale;
+  });
+
+  // Sort prioritizing PT-BR Neural voices at the top
+  return filtered.sort((a, b) => {
+    const aIsPtBr = (a.lang || "").toLowerCase().includes("pt-br");
+    const bIsPtBr = (b.lang || "").toLowerCase().includes("pt-br");
+    const aIsPt = (a.lang || "").toLowerCase().startsWith("pt");
+    const bIsPt = (b.lang || "").toLowerCase().startsWith("pt");
+    const aIsNeural = isNeuralVoice(a);
+    const bIsNeural = isNeuralVoice(b);
+
+    // 1. PT-BR Neural
+    if (aIsPtBr && aIsNeural && !(bIsPtBr && bIsNeural)) return -1;
+    if (bIsPtBr && bIsNeural && !(aIsPtBr && aIsNeural)) return 1;
+
+    // 2. PT-BR standard
+    if (aIsPtBr && !bIsPtBr) return -1;
+    if (bIsPtBr && !aIsPtBr) return 1;
+
+    // 3. Other Portuguese Neural
+    if (aIsPt && aIsNeural && !(bIsPt && bIsNeural)) return -1;
+    if (bIsPt && bIsNeural && !(aIsPt && aIsNeural)) return 1;
+
+    // 4. Other Portuguese
+    if (aIsPt && !bIsPt) return -1;
+    if (bIsPt && !aIsPt) return 1;
+
+    // 5. Neural any language
+    if (aIsNeural && !bIsNeural) return -1;
+    if (bIsNeural && !aIsNeural) return 1;
+
+    return a.name.localeCompare(b.name);
   });
 }
 
@@ -189,50 +270,53 @@ export function speakWithFemaleVoice(
       const explicit = voices.find((v) => v.name === options.voiceName);
       if (explicit) {
         utterance.voice = explicit;
+        utterance.lang = explicit.lang || "pt-BR";
         return;
       }
     }
 
-    const ptVoices = voices.filter((v) => v.lang.toLowerCase().startsWith("pt"));
-    const pool = ptVoices.length > 0 ? ptVoices : voices;
-
-    const maleKeywords = [
-      "daniel", "felipe", "antonio", "helio", "ricardo", "mario", "manuel",
-      "male", "david", "george", "gabriel", "joao", "tiago", "lucas", "pedro",
-      "bruno", "paulo", "gustavo", "marcos", "andre", "diego", "rodrigo",
-      "thiago", "carlos", "alexandre", "guilherme", "eduardo", "fernando",
-      "vitor", "renato", "vinicius", "rafael"
+    // Top preferred Neural Female PT-BR voices
+    const neuralFemaleKeywords = [
+      "francisca", "thalita", "brenda", "leticia", "yaris", "luciana",
+      "maria", "joana", "helena", "yasmin", "vitoria", "victoria", "daniela", "samantha"
     ];
 
-    const femaleKeywords = [
-      "daniela", "maria", "zira", "google", "female", "vitoria", "victoria",
-      "luciana", "samantha", "sara", "joana", "helena", "yasmin", "femi",
-      "fernanda", "marcia", "raquel", "francisca", "heloisa", "yaris",
-      "leticia", "giovanna", "isabela", "camila", "carolina", "juliana",
-      "gabriela", "paula", "beatriz", "clarissa", "noemia", "inez", "cecil",
-      "solange", "alice", "regina", "tania"
-    ];
-
-    let chosen = pool.find((v) => {
-      const nameLower = v.name.toLowerCase();
-      const isFemaleName = femaleKeywords.some((kw) => nameLower.includes(kw));
-      const isMaleName = maleKeywords.some((kw) => nameLower.includes(kw));
-      return isFemaleName && !isMaleName;
+    const ptBrVoices = voices.filter((v) => {
+      const lang = (v.lang || "").toLowerCase().replace("_", "-");
+      return lang.startsWith("pt-br") || lang === "pt";
     });
 
+    const candidatePool = ptBrVoices.length > 0 ? ptBrVoices : voices;
+
+    // 1. Look for Neural / Natural PT-BR Female Voice
+    let chosen = candidatePool.find((v) => {
+      const nameLower = v.name.toLowerCase();
+      const isNeural = isNeuralVoice(v);
+      const isFemale = neuralFemaleKeywords.some((kw) => nameLower.includes(kw));
+      return isNeural && isFemale;
+    });
+
+    // 2. Look for any PT-BR Female Voice
     if (!chosen) {
-      chosen = pool.find((v) => {
+      chosen = candidatePool.find((v) => {
         const nameLower = v.name.toLowerCase();
-        return !maleKeywords.some((kw) => nameLower.includes(kw));
+        return neuralFemaleKeywords.some((kw) => nameLower.includes(kw));
       });
     }
 
-    if (!chosen && pool.length > 0) {
-      chosen = pool[0];
+    // 3. Look for Google Portuguese
+    if (!chosen) {
+      chosen = candidatePool.find((v) => v.name.toLowerCase().includes("google") && (v.lang || "").toLowerCase().startsWith("pt"));
+    }
+
+    // 4. Fallback to first available PT voice
+    if (!chosen && candidatePool.length > 0) {
+      chosen = candidatePool[0];
     }
 
     if (chosen) {
       utterance.voice = chosen;
+      utterance.lang = chosen.lang || "pt-BR";
     }
   };
 
@@ -244,8 +328,11 @@ export function speakWithFemaleVoice(
     };
   }
 
-  utterance.pitch = options?.pitch !== undefined ? options.pitch : 1.2;
-  utterance.rate = options?.rate !== undefined ? options.rate : 1.02;
+  // Optimize pitch and rate for natural human prosody:
+  // Neural voices sound most realistic at pitch 1.0 (or 1.02) and rate 1.0
+  const isCurrentVoiceNeural = utterance.voice ? isNeuralVoice(utterance.voice) : false;
+  utterance.pitch = options?.pitch !== undefined ? options.pitch : (isCurrentVoiceNeural ? 1.0 : 1.05);
+  utterance.rate = options?.rate !== undefined ? options.rate : 1.0;
 
   utterance.onstart = () => onStart?.();
   utterance.onend = () => onEnd?.();

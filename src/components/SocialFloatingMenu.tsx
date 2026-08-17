@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Youtube, Instagram, MessageCircle, X, Share2, Sparkles, Accessibility, Eye, Type, Contrast, ScanFace, Hand, Mic, Volume2, Compass } from "lucide-react";
+import { Youtube, Instagram, MessageCircle, X, Share2, Sparkles, Accessibility, Eye, Type, Contrast, ScanFace, Hand, Mic, Volume2, Compass, Languages } from "lucide-react";
 import { useEffect } from "react";
 import { playClickSound } from "../utils/audio";
 
@@ -41,6 +41,26 @@ export default function SocialFloatingMenu({
   const handleAccessToggle = () => {
     playClickSound(isAccessOpen ? 600 : 750, "sine");
     setIsAccessOpen(!isAccessOpen);
+  };
+
+  const toggleVLibras = () => {
+    playClickSound(850, "sine");
+    const accessBtn = (
+      document.querySelector('[vw-access-button]') ||
+      document.querySelector('.access-button') ||
+      document.querySelector('[vw] .access-button') ||
+      document.querySelector('.vw-access-button') ||
+      document.querySelector('div[vw] > div:first-child')
+    ) as HTMLElement | null;
+
+    if (accessBtn) {
+      accessBtn.click();
+    } else {
+      const vwWrapper = document.querySelector('[vw-plugin-wrapper]') as HTMLElement | null;
+      if (vwWrapper) {
+        vwWrapper.classList.toggle('active');
+      }
+    }
   };
 
 
@@ -219,6 +239,27 @@ export default function SocialFloatingMenu({
                 </div>
               </motion.button>
             )}
+            {/* VLibras - Tradutor de Libras */}
+            <motion.button
+              onClick={toggleVLibras}
+              initial={{ opacity: 0, scale: 0.8, x: 30 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 30 }}
+              className="flex items-center gap-3 group focus:outline-none flex-row-reverse"
+            >
+              <div className="w-11 h-11 rounded-full flex flex-col items-center justify-center text-white bg-gradient-to-tr from-[#1B6CA8] via-[#0072CE] to-sky-400 hover:opacity-95 transition duration-300 shadow-lg shadow-blue-500/40 relative border border-sky-300/40">
+                {/* Stylized Hands / Sign Language icon */}
+                <span className="text-sm select-none">🤟</span>
+                <span className="text-[6.5px] font-mono font-extrabold uppercase tracking-tighter text-white">
+                  LIBRAS
+                </span>
+              </div>
+              <div className="bg-stone-950/90 border border-sky-500/50 rounded-xl py-1.5 px-3.5 shadow-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none text-right flex flex-col">
+                <span className="text-[10.5px] text-sky-400 font-bold whitespace-nowrap">Tradutor de Libras (VLibras) 🤟</span>
+                <span className="text-[8.5px] text-zinc-400 font-mono">Abrir Intérprete 3D em Sinais</span>
+              </div>
+            </motion.button>
+
             <motion.button
               onClick={() => { playClickSound(900, "sine"); setHighContrast(!highContrast); }}
               initial={{ opacity: 0, scale: 0.8, x: 30 }}

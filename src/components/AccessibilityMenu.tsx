@@ -52,11 +52,52 @@ export default function AccessibilityMenu({
     setLargeText(!largeText);
   };
 
+  const toggleVLibras = () => {
+    playClickSound(850, "sine");
+    const accessBtn = (
+      document.querySelector('[vw-access-button]') ||
+      document.querySelector('.access-button') ||
+      document.querySelector('[vw] .access-button') ||
+      document.querySelector('.vw-access-button') ||
+      document.querySelector('div[vw] > div:first-child')
+    ) as HTMLElement | null;
+
+    if (accessBtn) {
+      accessBtn.click();
+    } else {
+      const vwWrapper = document.querySelector('[vw-plugin-wrapper]') as HTMLElement | null;
+      if (vwWrapper) {
+        vwWrapper.classList.toggle('active');
+      }
+    }
+  };
+
   return (
     <div className="relative flex flex-col items-end gap-3 z-50">
       <AnimatePresence>
         {isOpen && (
           <div className="flex flex-col gap-3 mr-1 mb-1 items-end">
+            <motion.button
+              onClick={toggleVLibras}
+              initial={{ opacity: 0, scale: 0.8, x: 30 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 30 }}
+              transition={{ delay: 0.01, type: "spring", stiffness: 260, damping: 20 }}
+              className="flex items-center gap-3 group focus:outline-none flex-row-reverse"
+            >
+              <div className="w-10 h-10 rounded-full flex flex-col items-center justify-center text-white bg-gradient-to-tr from-[#1B6CA8] via-[#0072CE] to-sky-400 hover:opacity-95 transition duration-300 shadow-lg shadow-blue-500/30 border border-sky-300/40">
+                <span className="text-xs">🤟</span>
+                <span className="text-[6px] font-mono font-extrabold uppercase tracking-tighter">LIBRAS</span>
+              </div>
+              <div className="bg-stone-950/90 border border-sky-500/50 rounded-2xl py-1.5 px-3.5 shadow-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none origin-right flex flex-col text-right">
+                <span className="text-[10px] text-sky-400 font-bold whitespace-nowrap">
+                  Tradutor de Libras (VLibras) 🤟
+                </span>
+                <span className="text-[8px] text-zinc-400 font-mono">
+                  Abrir Intérprete 3D de Sinais
+                </span>
+              </div>
+            </motion.button>
             {onOpenVoiceAgent && (
               <motion.button
                 onClick={() => { playClickSound(850, "sine"); onOpenVoiceAgent(); setIsOpen(false); }}

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import express from "express";
 import path from "path";
 import nodemailer from "nodemailer";
@@ -1075,7 +1075,14 @@ REGRAS DE RESPOSTA E EASTER EGG DE REFLEXÃO ("O CAFEZINHO"):
 - No entanto, se o usuário insistir na pergunta (ou se a mensagem contiver "retomar", "insistir", "pensou", "e aí"), forneça imediatamente um conselho estratégico profundo, estruturado e altamente especializado!
 `;
 
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ 
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
 
       const fullPrompt = `
 Histórico da conversa:
@@ -1085,10 +1092,13 @@ Usuário: ${message}
 `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.1-pro-preview",
         contents: fullPrompt,
         config: {
           systemInstruction: contextText,
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.HIGH,
+          },
           tools: [{ googleSearch: {} }],
           temperature: 0.7,
         }

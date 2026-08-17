@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { buttonVariants } from "./button"
-import { Calendar, Clock, MapPin, Edit3, Check, X, Eye, EyeOff } from "lucide-react"
+import { Calendar, Clock, MapPin, Edit3, Check, X, Eye, EyeOff, Sparkles, Rocket } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 interface EventCountdownCardProps {
   title?: string
   subtitle?: string
   date?: Date
+  presentationDate?: Date
   image?: string
   attendees?: number
   onJoin?: () => void
+  onOpenTour?: () => void
   buttonText?: string
   showButton?: boolean
   enableAnimations?: boolean
@@ -23,18 +25,21 @@ interface EventCountdownCardProps {
 export function EventCountdownCard({
   title = "Lançamento Portal",
   subtitle = "Dia 17 Agosto | 19h",
-  date = new Date("2026-08-17T19:00:00-03:00"),
+  date = new Date("2026-08-17T19:30:00-03:00"),
+  presentationDate = new Date("2026-08-17T20:00:00-03:00"),
   image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRYer0HiBG4YMv-tueznhCQeXqIJ52gc8_vru2u9_MR_L64O_2dCG98yfD&s=10", 
   attendees = 0,
   onJoin,
+  onOpenTour,
   buttonText: initialButtonText,
   showButton: initialShowButton = true,
   enableAnimations = true,
   className,
   isEditable = false,
 }: EventCountdownCardProps) {
-  // Stable event date - only calculate once when no date prop is provided
+  // Stable event dates
   const [eventDate] = useState(() => date)
+  const [presentationEventDate] = useState(() => presentationDate)
 
   // Custom button configuration stored in localStorage
   const [btnText, setBtnText] = useState(() => {
@@ -54,13 +59,13 @@ export function EventCountdownCard({
   const [tempText, setTempText] = useState(btnText);
   const [tempVisible, setTempVisible] = useState(btnVisible);
   
-  // Initialize timeLeft with the correct calculation
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const targetDate = date || eventDate
-    return Math.max(0, Math.floor((+targetDate - Date.now()) / 1000))
-  })
-  const shouldReduceMotion = useReducedMotion()
-  const shouldAnimate = enableAnimations && !shouldReduceMotion
+  // Phase management
+  const [isTopoPhase, setIsTopoPhase] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  const shouldReduceMotion = useReducedMotion();
+  const shouldAnimate = enableAnimations && !shouldReduceMotion;
 
   useEffect(() => {
     if (initialButtonText) {
@@ -77,30 +82,46 @@ export function EventCountdownCard({
   };
 
   useEffect(() => {
-    const targetDate = date || eventDate
+    const target1 = date || eventDate;
+    const target2 = presentationDate || presentationEventDate;
     
     const update = () => {
-      const remaining = Math.max(0, Math.floor((+targetDate - Date.now()) / 1000))
-      setTimeLeft(remaining)
-    }
+      const now = Date.now();
+      const t1 = +target1;
+      const t2 = +target2;
+
+      if (now < t1) {
+        // Phase 1: Countdown to 19:30
+        setIsTopoPhase(false);
+        setIsFinished(false);
+        setTimeLeft(Math.max(0, Math.floor((t1 - now) / 1000)));
+      } else if (now >= t1 && now < t2) {
+        // Phase 2: TOPO + Countdown to Presentation Start (20:00)
+        setIsTopoPhase(true);
+        setIsFinished(false);
+        setTimeLeft(Math.max(0, Math.floor((t2 - now) / 1000)));
+      } else {
+        // Phase 3: Presentation started
+        setIsTopoPhase(true);
+        setIsFinished(true);
+        setTimeLeft(0);
+      }
+    };
     
-    // Update immediately
-    update()
-    
-    // Then update every second
-    const interval = setInterval(update, 1000)
-    return () => clearInterval(interval)
-  }, [date, eventDate])
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [date, eventDate, presentationDate, presentationEventDate]);
 
   const getTimeUnits = (seconds: number) => {
-    const days = Math.floor(seconds / 86400)
-    const hours = Math.floor((seconds % 86400) / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return { days, hours, minutes, seconds: secs }
-  }
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return { days, hours, minutes, seconds: secs };
+  };
 
-  const { days, hours, minutes, seconds } = getTimeUnits(timeLeft)
+  const { days, hours, minutes, seconds } = getTimeUnits(timeLeft);
 
   const containerVariants = {
     hidden: {
@@ -135,11 +156,11 @@ export function EventCountdownCard({
       transition: { 
         type: "spring" as const, 
         stiffness: 300, 
-        damping: 30,
+        damping: 30, 
         mass: 0.8,
       }
     } : {},
-  }
+  };
 
   const numberVariants = {
     initial: { scale: 1, opacity: 1 },
@@ -152,7 +173,7 @@ export function EventCountdownCard({
         ease: "easeInOut" as const
       }
     } : {},
-  }
+  };
 
   const childVariants = {
     hidden: {
@@ -173,7 +194,7 @@ export function EventCountdownCard({
         mass: 0.6,
       },
     },
-  }
+  };
 
   const buttonVariants_motion = {
     hidden: {
@@ -203,7 +224,7 @@ export function EventCountdownCard({
       }
     } : {},
     tap: shouldAnimate ? { scale: 0.95 } : {},
-  }
+  };
 
   return (
     <motion.div
@@ -213,8 +234,8 @@ export function EventCountdownCard({
       whileHover="hover"
       variants={containerVariants}
       className={cn(
-        "relative w-full max-w-sm mx-auto rounded-2xl border border-zinc-800 bg-stone-950 text-white overflow-hidden",
-        "shadow-2xl shadow-black/50 cursor-pointer group",
+        "relative w-full max-w-sm mx-auto rounded-2xl border bg-stone-950 text-white overflow-hidden shadow-2xl shadow-black/50 cursor-pointer group",
+        isTopoPhase ? "border-yellow-500/60 shadow-[0_0_40px_rgba(234,179,8,0.2)]" : "border-zinc-800",
         className
       )}
     >
@@ -233,8 +254,17 @@ export function EventCountdownCard({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
         
-        {/* Urgency Badge */}
-        {timeLeft > 0 && timeLeft < 86400 && ( // Less than 24 hours
+        {/* Urgency Badge or TOPO Badge */}
+        {isTopoPhase ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute top-4 right-4 bg-gradient-to-r from-amber-500 to-yellow-400 text-black px-3 py-1 rounded-full text-xs font-black font-display shadow-lg shadow-yellow-500/30 flex items-center gap-1"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>TOPO ATIVO</span>
+          </motion.div>
+        ) : (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -252,17 +282,28 @@ export function EventCountdownCard({
           className="space-y-3"
           variants={shouldAnimate ? childVariants : {}}
         >
-          <motion.h3 
-            className="text-lg font-bold leading-tight tracking-tight text-white"
-            initial={{ opacity: 0.9 }}
-            whileHover={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            {title}
-          </motion.h3>
+          <div className="flex items-center justify-between gap-2">
+            <motion.h3 
+              className="text-lg font-bold leading-tight tracking-tight text-white"
+              initial={{ opacity: 0.9 }}
+              whileHover={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {title}
+            </motion.h3>
+            {isTopoPhase && (
+              <span className="bg-yellow-400/20 text-yellow-300 border border-yellow-400/40 px-2 py-0.5 rounded text-[10px] font-mono font-black animate-pulse">
+                TOPO
+              </span>
+            )}
+          </div>
+
           {subtitle && (
-            <p className="text-xs font-mono font-semibold text-pink-400 tracking-wide uppercase">
-              {subtitle}
+            <p className={cn(
+              "text-xs font-mono font-semibold tracking-wide uppercase",
+              isTopoPhase ? "text-yellow-400" : "text-pink-400"
+            )}>
+              {isTopoPhase ? "Fase TOPO • Apresentação do Portal" : subtitle}
             </p>
           )}
           <p className="text-xs text-zinc-400 leading-relaxed">
@@ -271,12 +312,12 @@ export function EventCountdownCard({
           
           <div className="flex flex-col gap-2 text-xs text-zinc-400">
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-pink-500" />
-              <span>17 de Agosto, Segunda-feira, 19h</span>
+              <Calendar className={cn("w-4 h-4", isTopoPhase ? "text-yellow-400" : "text-pink-500")} />
+              <span>17 de Agosto, Segunda-feira, 19:30</span>
             </div>
             <div className="flex flex-col gap-1">
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-pink-500 shrink-0 mt-0.5" />
+                <MapPin className={cn("w-4 h-4 shrink-0 mt-0.5", isTopoPhase ? "text-yellow-400" : "text-pink-500")} />
                 <span>
                   ROSSI 360 HOME & BUSINESS<br/>
                   Auditório do Office 360 – Estrela Sul<br/>
@@ -288,14 +329,17 @@ export function EventCountdownCard({
         </motion.div>
 
         {/* Countdown Display */}
-        {timeLeft > 0 ? (
+        {!isFinished ? (
           <motion.div 
             className="space-y-3 pt-2"
             variants={shouldAnimate ? childVariants : {}}
           >
-            <div className="flex items-center gap-1 text-xs font-medium text-pink-400 uppercase tracking-widest">
+            <div className={cn(
+              "flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest",
+              isTopoPhase ? "text-yellow-400" : "text-pink-400"
+            )}>
               <Clock className="w-3.5 h-3.5" />
-              <span>Contagem Regressiva:</span>
+              <span>{isTopoPhase ? "Início da Apresentação em:" : "Contagem Regressiva:"}</span>
             </div>
             
             <div className="grid grid-cols-4 gap-2">
@@ -310,9 +354,12 @@ export function EventCountdownCard({
                   variants={index === 3 ? numberVariants : {}} // Only seconds pulse
                   initial="initial"
                   animate={index === 3 ? "pulse" : "initial"}
-                  className="bg-zinc-900/50 rounded-xl p-2 text-center border border-zinc-800"
+                  className={cn(
+                    "rounded-xl p-2 text-center border",
+                    isTopoPhase ? "bg-yellow-950/30 border-yellow-500/30" : "bg-zinc-900/50 border-zinc-800"
+                  )}
                 >
-                  <div className="text-lg font-bold tabular-nums text-white">
+                  <div className={cn("text-lg font-bold tabular-nums", isTopoPhase ? "text-yellow-300" : "text-white")}>
                     {unit.value.toString().padStart(2, "0")}
                   </div>
                   <div className="text-[10px] text-zinc-500 font-medium uppercase">
@@ -325,10 +372,26 @@ export function EventCountdownCard({
         ) : (
           <motion.div
             variants={shouldAnimate ? childVariants : {}}
-            className="text-center py-4"
+            className="text-center py-4 bg-green-500/10 rounded-2xl border border-green-500/30 p-4 space-y-2"
           >
-            <div className="text-lg font-bold text-green-500">O evento já começou!</div>
-            <div className="text-sm text-zinc-400">Acompanhe nossas redes.</div>
+            <div className="text-base font-black text-green-400 uppercase tracking-wide flex items-center justify-center gap-2">
+              <Rocket className="w-5 h-5 animate-bounce text-green-400" />
+              <span>Apresentação Iniciada!</span>
+            </div>
+            <div className="text-xs text-zinc-300">
+              O foguete decolou para o topo. Conheça as novidades no Tour Virtual.
+            </div>
+            {onOpenTour && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTour();
+                }}
+                className="mt-2 px-4 py-2 bg-green-500 hover:bg-green-400 text-black text-xs font-black uppercase rounded-xl transition shadow-md flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+              >
+                <span>Abrir Tour Virtual</span>
+              </button>
+            )}
           </motion.div>
         )}
 
@@ -347,10 +410,10 @@ export function EventCountdownCard({
                 whileTap="tap"
                 className={cn(
                   buttonVariants({ variant: "default" }), 
-                  "w-full h-11 font-bold text-xs sm:text-sm uppercase tracking-wider",
-                  "bg-gradient-to-r from-pink-600 to-pink-500",
-                  "hover:from-pink-500 hover:to-pink-400 text-white",
-                  "shadow-lg shadow-pink-500/25 border-none cursor-pointer"
+                  "w-full h-11 font-bold text-xs sm:text-sm uppercase tracking-wider text-white shadow-lg border-none cursor-pointer",
+                  isTopoPhase 
+                    ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400 shadow-yellow-500/25 font-black"
+                    : "bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 shadow-pink-500/25"
                 )}
               >
                 {btnText}
@@ -402,7 +465,7 @@ export function EventCountdownCard({
                 <div className="flex items-center gap-2">
                   <Edit3 className="w-4 h-4 text-pink-500" />
                   <h4 className="font-display font-bold text-sm uppercase tracking-wider">
-                    Editar Botão Rosa do Evento
+                    Editar Botão do Evento
                   </h4>
                 </div>
                 <button 
@@ -426,7 +489,7 @@ export function EventCountdownCard({
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition"
                 />
                 <p className="text-[10px] text-zinc-500 font-sans">
-                  Altere o texto exibido no botão rosa do card de evento.
+                  Altere o texto exibido no botão do card de evento.
                 </p>
               </div>
 
@@ -434,7 +497,7 @@ export function EventCountdownCard({
               <div className="flex items-center justify-between bg-zinc-900/60 p-3 rounded-2xl border border-zinc-800">
                 <div className="space-y-0.5">
                   <span className="text-xs font-mono font-bold uppercase text-zinc-200 block">
-                    Exibir Botão Rosa
+                    Exibir Botão
                   </span>
                   <span className="text-[10px] text-zinc-400 block">
                     {tempVisible ? "O botão está visível" : "O botão está oculto"}

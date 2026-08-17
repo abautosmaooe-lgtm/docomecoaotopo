@@ -61,3 +61,21 @@ html, body {
   background: #22c55e;
 }
 
+/* Guardar o botão flutuante padrão do VLibras para não sobrepor botões da interface */
+[vw] [vw-access-button],
+[vw-access-button],
+.vw-access-button,
+[vw] .access-button,
+div[vw] > div[vw-access-button],
+div[vw] > .access-button {
+  position: fixed !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  opacity: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+  z-index: -10 !important;
+}
+
