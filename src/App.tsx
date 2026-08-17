@@ -1821,7 +1821,7 @@ export default function App() {
     <div
       id="app-root"
       className={`min-h-screen font-sans overflow-x-hidden transition-all duration-300 relative ${
-        activeTab === "editor" ? "pb-24" : ""
+        activeTab === "editor" || (user.isAuthenticated && user.isAdmin) ? "pb-24" : ""
       } ${
         isDarkMode ? "bg-black text-white" : "bg-stone-50 text-stone-900"
       }`}
@@ -5834,7 +5834,7 @@ export default function App() {
       />
 
       {/* PERSISTENT STICKY ADMINISTRATOR TOOLBAR (STICKY BOTTOM BAR AT WEB PAGE ROOT) */}
-      {activeTab === "editor" && (
+      {(activeTab === "editor" || (user.isAuthenticated && user.isAdmin)) && (
         <div 
           id="editor-bottom-bar"
           className="fixed bottom-0 left-0 right-0 h-20 bg-stone-900 border-t border-pink-500/30 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] flex items-center justify-between px-6 z-50 animate-slide-up"
